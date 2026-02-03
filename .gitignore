@@ -15,7 +15,7 @@
 .env.*
 !.env.example
 
-nginx/certs/
+certs/
 !nginx/certs/self-signed.crt.example
 
 .DS_Store
