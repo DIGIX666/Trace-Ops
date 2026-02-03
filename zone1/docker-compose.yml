@@ -1,0 +1,58 @@
+services:
+  # --- Service Proxy Principal (Gère le HTTPS /443) ---
+  reverse-proxy:
+    image: nginx:alpine
+    container_name: trace-ops-proxy
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certs:/etc/nginx/certs
+    networks:
+      - zone1-network
+    depends_on:
+      - frontend-vue
+      - backend-j2
+      - backend-em
+
+  # --- Service Frontend Vue.js ---
+  frontend-vue:
+    build: ./services/frontend-vue
+    container_name: trace-ops-frontend
+    networks:
+      - zone1-network
+    # Ce conteneur expose le port 80 en interne, capté par le reverse-proxy
+
+  # --- Service Moteur J2 (Backend Python) ---
+  backend-j2:
+    build: ./services/backend-j2
+    container_name: trace-ops-j2
+    networks:
+      - zone1-network
+
+  # --- Service Décision EM (Backend Node.js API) ---
+  backend-em:
+    build: ./services/backend-em
+    container_name: trace-ops-em
+    networks:
+      - zone1-network
+
+  # --- Base de données locale (Métadonnées) ---
+  db-zone1:
+    image: postgres:15-alpine
+    container_name: trace-ops-db-z1
+    environment:
+      POSTGRES_USER: traceops
+      POSTGRES_PASSWORD: password_securise
+      POSTGRES_DB: traceops_z1
+    volumes:
+      - db_data_z1:/var/lib/postgresql/data
+    networks:
+      - zone1-network
+
+networks:
+  zone1-network:
+    driver: bridge
+
+volumes:
+  db_data_z1:
