@@ -1,0 +1,1 @@
+- Ne pas oublier d'ajouter les certs dans zone1/nginx/certs/
