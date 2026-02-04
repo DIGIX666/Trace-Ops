@@ -1,0 +1,27 @@
+General:
+  ListenAddress: 0.0.0.0
+  ListenPort: 7050
+  LocalMSPID: OrdererMSP
+  LocalMSPDir: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/msp
+
+  TLS:
+    Enabled: true
+    PrivateKey: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.key
+    Certificate: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.crt
+    RootCAs:
+      - /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt
+    ClientAuthRequired: true
+    ClientRootCAs:
+      - /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt
+
+FileLedger:
+  Location: /var/hyperledger/production/orderer
+
+ChannelParticipation:
+  Enabled: true
+
+Operations:
+  ListenAddress: 0.0.0.0:9443
+
+Metrics:
+  Provider: disabled
