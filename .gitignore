@@ -37,3 +37,5 @@ __pycache__/
 .coverage
 htmlcov/
 **/coverage.xml
+
+keycloak-config/realms

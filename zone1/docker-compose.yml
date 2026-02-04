@@ -37,16 +37,26 @@ services:
     networks:
       - zone1-network
 
-  # --- Base de données locale (Métadonnées) ---
-  db-zone1:
-    image: postgres:15-alpine
-    container_name: trace-ops-db-z1
+  keycloak:
+    extends:
+      file: ../keycloak-config/docker-compose.keycloak.yml
+      service: keycloak
+    command: start-dev --import-realm
     environment:
-      POSTGRES_USER: traceops
-      POSTGRES_PASSWORD: password_securise
-      POSTGRES_DB: traceops_z1
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
     volumes:
-      - db_data_z1:/var/lib/postgresql/data
+      - ../keycloak-config/realms:/opt/keycloak/data/import
+    networks:
+      - zone1-network
+    ports:
+      - "8080:8080"
+
+  keycloak-db:
+    extends:
+      file: ../keycloak-config/docker-compose.keycloak.yml
+      service: keycloak-db
     networks:
       - zone1-network
 
@@ -55,4 +65,4 @@ networks:
     driver: bridge
 
 volumes:
-  db_data_z1:
+  keycloak_db_data:

@@ -2,9 +2,15 @@
   <header>
     <div class="logo">TRACE-OPS <span class="zone-badge">ZONE 1</span></div>
     <nav>
-      <RouterLink to="/alert">📡 Terrain (Injection)</RouterLink>
-      <RouterLink to="/j2">🔍 J2 (Analyse)</RouterLink>
-      <RouterLink to="/em">⚖️ EM (Décision)</RouterLink>
+      <RouterLink v-if="hasRole('Opérateur Terrain')" to="/alert"
+        >📡 Terrain (Injection)</RouterLink
+      >
+      <RouterLink v-if="hasRole('Analyste J2')" to="/j2"
+        >🔍 J2 (Analyse)</RouterLink
+      >
+      <RouterLink v-if="hasRole('Décideur J3/EM')" to="/em"
+        >⚖️ EM (Décision)</RouterLink
+      >
     </nav>
   </header>
 
@@ -15,6 +21,17 @@
 
 <script setup>
 import { RouterLink, RouterView } from "vue-router";
+import { inject, onMounted, ref } from "vue";
+const keycloak = inject("keycloak");
+const userRoles = ref([]);
+
+onMounted(() => {
+  if (keycloak?.authenticated) {
+    userRoles.value = keycloak.tokenParsed?.realm_access?.roles || [];
+  }
+});
+
+const hasRole = (role) => userRoles.value.includes(role);
 </script>
 
 <style>
