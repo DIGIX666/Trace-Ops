@@ -11,7 +11,8 @@ up:
 	docker compose -f $(ZONE1_DOCKER_PATH) up -d
 
 build:
-	docker compose -f $(ZONE1_DOCKER_PATH) up -d --build
+	docker compose -f "$(ZONE1_DOCKER_PATH)" build --no-cache
+	docker compose -f "$(ZONE1_DOCKER_PATH)" up -d
 
 down:
 	docker compose -f $(ZONE1_DOCKER_PATH) down

@@ -3,8 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
-    "express": "^4.18.2",
     "axios": "^1.6.0",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-jwt": "^8.5.1",
+    "express-session": "^1.19.0",
+    "jwks-rsa": "^3.2.2",
+    "keycloak-connect": "^26.1.1"
   }
 }

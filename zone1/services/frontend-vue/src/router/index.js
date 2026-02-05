@@ -8,9 +8,9 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', component: Home, name: 'Accueil', meta: { requiresAuth: true } },
-    { path: '/alert', component: AlertInjection, name: 'Injection', meta: { requiresRole: 'Opérateur Terrain' } },
-    { path: '/j2', component: J2Dashboard, name: 'Analyse J2', meta: { requiresRole: 'Analyste J2' } },
-    { path: '/em', component: EMDecision, name: 'Decision EM', meta: { requiresRole: 'Décideur J3/EM' } }
+    { path: '/alert', component: AlertInjection, name: 'Injection', meta: { requiresRole: 'operateur' } },
+    { path: '/j2', component: J2Dashboard, name: 'Analyse J2', meta: { requiresRole: 'analyste' } },
+    { path: '/em', component: EMDecision, name: 'Decision EM', meta: { requiresRole: 'decideur' } }
   ]
 })
 

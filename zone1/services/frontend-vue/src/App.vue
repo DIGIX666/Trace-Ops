@@ -2,14 +2,14 @@
   <header>
     <div class="logo">TRACE-OPS <span class="zone-badge">ZONE 1</span></div>
     <nav>
-      <RouterLink v-if="hasRole('Opérateur Terrain')" to="/alert"
-        >📡 Terrain (Injection)</RouterLink
+      <RouterLink v-if="hasRole('operateur')" to="/alert"
+        >Terrain (Injection)</RouterLink
       >
-      <RouterLink v-if="hasRole('Analyste J2')" to="/j2"
-        >🔍 J2 (Analyse)</RouterLink
+      <RouterLink v-if="hasRole('analyste')" to="/j2"
+        >J2 (Analyse)</RouterLink
       >
-      <RouterLink v-if="hasRole('Décideur J3/EM')" to="/em"
-        >⚖️ EM (Décision)</RouterLink
+      <RouterLink v-if="hasRole('decideur')" to="/em"
+        >EM (Décision)</RouterLink
       >
     </nav>
   </header>

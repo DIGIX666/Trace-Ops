@@ -7,7 +7,9 @@ const initOptions = {
   url: 'http://localhost:8080',
   realm: 'trace-ops',
   clientId: 'frontend-vue',
-  onLoad: 'login-required'
+  onLoad: 'login-required',
+  checkLoginIframe: false,
+  redirectUri: window.location.origin + window.location.pathname
 }
 
 const keycloak = new Keycloak(initOptions)
