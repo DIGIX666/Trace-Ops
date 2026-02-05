@@ -12,6 +12,7 @@
         >EM (Décision)</RouterLink
       >
     </nav>
+    <RouterLink v-if="keycloak?.authenticated" to="/logout">Déconnexion</RouterLink>
   </header>
 
   <main>
@@ -22,7 +23,7 @@
 <script setup>
 import { RouterLink, RouterView } from "vue-router";
 import { inject, onMounted, ref } from "vue";
-const keycloak = inject("keycloak");
+const keycloak = window.__KEYCLOAK
 const userRoles = ref([]);
 
 onMounted(() => {

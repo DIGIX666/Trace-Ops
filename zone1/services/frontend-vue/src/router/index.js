@@ -3,6 +3,7 @@ import AlertInjection from '../views/AlertInjection.vue'
 import J2Dashboard from '../views/J2Dashboard.vue'
 import EMDecision from '../views/EMDecision.vue'
 import Home from '../views/Home.vue'
+import { callLogout } from '@/services/logout'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -10,7 +11,8 @@ const router = createRouter({
     { path: '/', component: Home, name: 'Accueil', meta: { requiresAuth: true } },
     { path: '/alert', component: AlertInjection, name: 'Injection', meta: { requiresRole: 'operateur' } },
     { path: '/j2', component: J2Dashboard, name: 'Analyse J2', meta: { requiresRole: 'analyste' } },
-    { path: '/em', component: EMDecision, name: 'Decision EM', meta: { requiresRole: 'decideur' } }
+    { path: '/em', component: EMDecision, name: 'Decision EM', meta: { requiresRole: 'decideur' } },
+    { path: '/logout', name: 'Logout', beforeEnter: callLogout }
   ]
 })
 
