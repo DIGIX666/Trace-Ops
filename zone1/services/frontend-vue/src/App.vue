@@ -36,7 +36,6 @@ const hasRole = (role) => userRoles.value.includes(role);
 </script>
 
 <style>
-/* Global simple styles */
 body {
   font-family: "Arial", sans-serif;
   margin: 0;

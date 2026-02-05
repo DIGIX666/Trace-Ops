@@ -1,7 +1,6 @@
 import { reactive } from 'vue';
 import apiClient from './apiClient.js';
 
-// État réactif pour l'affichage
 export const store = reactive({
   alerts: []
 });
@@ -38,7 +37,7 @@ export const analyzeAlert = async (id) => {
   }
 };
 
-// Décision (EM) -> Appelle Node.js
+// Décision (EM)
 export const makeDecision = async (id, decisionType) => {
   try {
     const response = await apiClient.post('/em/decision', {

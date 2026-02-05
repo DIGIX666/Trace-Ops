@@ -20,11 +20,9 @@ router.beforeEach(async (to, from, next) => {
   const keycloak = window.__KEYCLOAK
   
   if (!keycloak) {
-    // Keycloak pas encore prêt
     return next('/')
   }
 
-  // Vérifier l'authentification
   if (to.meta.requiresAuth && !keycloak.authenticated) {
     await keycloak.login()
     return
