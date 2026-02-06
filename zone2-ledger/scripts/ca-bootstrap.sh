@@ -13,6 +13,7 @@ fi
 CA_NAME=${CA_NAME:-ca-traceops}
 CA_HOST=${CA_HOST:-ca.traceops.local}
 CA_PORT=${CA_PORT:-7054}
+CA_SCHEME=${CA_SCHEME:-http}
 CA_ADMIN=${CA_ADMIN:-admin}
 CA_ADMIN_PW=${CA_ADMIN_PW:-adminpw}
 
@@ -27,23 +28,29 @@ CRYPTO_DIR="${ROOT_DIR}/crypto"
 ORG_DIR="${CRYPTO_DIR}/organizations"
 CA_TLS_CERT=${CA_TLS_CERT:-"/crypto/ca/ca-cert.pem"}
 CA_TLS_CERT_HOST=${CA_TLS_CERT_HOST:-"${CRYPTO_DIR}/ca/ca-cert.pem"}
-CA_URL="https://${CA_ADMIN}:${CA_ADMIN_PW}@${CA_HOST}:${CA_PORT}"
+CA_URL="${CA_SCHEME}://${CA_ADMIN}:${CA_ADMIN_PW}@${CA_HOST}:${CA_PORT}"
 TOOLS_IMAGE=${TOOLS_IMAGE:-"hyperledger/fabric-ca:1.5.16"}
+NETWORK_NAME=${NETWORK_NAME:-"traceops"}
 
 command -v docker >/dev/null 2>&1 || {
   echo "docker not found in PATH" >&2
   exit 1
 }
 
-if [ ! -f "${CA_TLS_CERT_HOST}" ]; then
-  echo "CA TLS cert not found at ${CA_TLS_CERT_HOST}" >&2
-  exit 1
+TLS_ARGS=()
+if [ "${CA_SCHEME}" = "https" ]; then
+  if [ ! -f "${CA_TLS_CERT_HOST}" ]; then
+    echo "CA TLS cert not found at ${CA_TLS_CERT_HOST}" >&2
+    exit 1
+  fi
+  TLS_ARGS=(--tls.certfiles "${CA_TLS_CERT}")
 fi
 
 run_ca_client() {
   local client_home=$1
   shift
   docker run --rm \
+    --network "${NETWORK_NAME}" \
     -v "${CRYPTO_DIR}:/crypto" \
     -v "${ROOT_DIR}/config:/config" \
     -e FABRIC_CA_CLIENT_HOME="${client_home}" \
@@ -52,7 +59,7 @@ run_ca_client() {
 }
 
 mkdir -p "${CRYPTO_DIR}/fabric-ca-client"
-run_ca_client "/crypto/fabric-ca-client" enroll -u "${CA_URL}" --caname "${CA_NAME}" --tls.certfiles "${CA_TLS_CERT}"
+run_ca_client "/crypto/fabric-ca-client" enroll -u "${CA_URL}" --caname "${CA_NAME}" "${TLS_ARGS[@]}"
 
 register_id() {
   local name=$1
@@ -63,7 +70,7 @@ register_id() {
     --id.name "${name}" \
     --id.secret "${secret}" \
     --id.type "${type}" \
-    --tls.certfiles "${CA_TLS_CERT}"
+    "${TLS_ARGS[@]}"
 }
 
 register_id "${ORG_J2}admin" "${ORG_J2}adminpw" admin
@@ -91,10 +98,12 @@ setup_tls_files() {
 
 setup_org_tls_ca() {
   local org_root=$1
+  local tls_source_dir=$2
   local ca_file
-  ca_file=$(ls "${org_root}/msp/cacerts" | head -n 1)
-  mkdir -p "${org_root}/tlscacerts"
-  cp "${org_root}/msp/cacerts/${ca_file}" "${org_root}/tlscacerts/ca.crt"
+  ca_file=$(ls "${tls_source_dir}/tlscacerts" | head -n 1)
+  mkdir -p "${org_root}/tlscacerts" "${org_root}/msp/tlscacerts"
+  cp "${tls_source_dir}/tlscacerts/${ca_file}" "${org_root}/tlscacerts/ca.crt"
+  cp "${tls_source_dir}/tlscacerts/${ca_file}" "${org_root}/msp/tlscacerts/ca.crt"
 }
 
 create_org_msp() {
@@ -102,12 +111,13 @@ create_org_msp() {
   local org_domain="${org}.${DOMAIN}"
   local peer="peer0.${org_domain}"
   local org_root="${ORG_DIR}/peerOrganizations/${org_domain}"
+  local org_root_in_container="/crypto/organizations/peerOrganizations/${org_domain}"
 
   mkdir -p "${org_root}"
 
-  run_ca_client "/crypto/organizations/peerOrganizations/${org_domain}" enroll -u "https://${org}admin:${org}adminpw@${CA_HOST}:${CA_PORT}" \
+  run_ca_client "/crypto/organizations/peerOrganizations/${org_domain}" enroll -u "${CA_SCHEME}://${org}admin:${org}adminpw@${CA_HOST}:${CA_PORT}" \
     --caname "${CA_NAME}" \
-    --tls.certfiles "${CA_TLS_CERT}"
+    "${TLS_ARGS[@]}"
 
   local ca_cert_file
   ca_cert_file=$(ls "${org_root}/msp/cacerts")
@@ -130,43 +140,44 @@ NodeOUs:
 EOF
 
   mkdir -p "${org_root}/peers/${peer}/msp"
-  run_ca_client "/crypto/organizations/peerOrganizations/${org_domain}" enroll -u "https://peer0.${org}:peer0${org}pw@${CA_HOST}:${CA_PORT}" \
+  run_ca_client "/crypto/organizations/peerOrganizations/${org_domain}" enroll -u "${CA_SCHEME}://peer0.${org}:peer0${org}pw@${CA_HOST}:${CA_PORT}" \
     --caname "${CA_NAME}" \
-    --tls.certfiles "${CA_TLS_CERT}" \
-    --mspdir "${org_root}/peers/${peer}/msp"
+    "${TLS_ARGS[@]}" \
+    --mspdir "${org_root_in_container}/peers/${peer}/msp"
 
   cp "${org_root}/msp/config.yaml" "${org_root}/peers/${peer}/msp/config.yaml"
 
-  run_ca_client "/crypto/organizations/peerOrganizations/${org_domain}" enroll -u "https://peer0.${org}:peer0${org}pw@${CA_HOST}:${CA_PORT}" \
+  run_ca_client "/crypto/organizations/peerOrganizations/${org_domain}" enroll -u "${CA_SCHEME}://peer0.${org}:peer0${org}pw@${CA_HOST}:${CA_PORT}" \
     --caname "${CA_NAME}" \
-    --tls.certfiles "${CA_TLS_CERT}" \
+    "${TLS_ARGS[@]}" \
     --enrollment.profile tls \
     --csr.hosts "${peer}" \
     --csr.hosts "localhost" \
-    --mspdir "${org_root}/peers/${peer}/tls"
+    --mspdir "${org_root_in_container}/peers/${peer}/tls"
 
   setup_tls_files "${org_root}/peers/${peer}/tls"
 
   mkdir -p "${org_root}/users/Admin@${org_domain}/msp"
-  run_ca_client "/crypto/organizations/peerOrganizations/${org_domain}" enroll -u "https://${org}admin:${org}adminpw@${CA_HOST}:${CA_PORT}" \
+  run_ca_client "/crypto/organizations/peerOrganizations/${org_domain}" enroll -u "${CA_SCHEME}://${org}admin:${org}adminpw@${CA_HOST}:${CA_PORT}" \
     --caname "${CA_NAME}" \
-    --tls.certfiles "${CA_TLS_CERT}" \
-    --mspdir "${org_root}/users/Admin@${org_domain}/msp"
+    "${TLS_ARGS[@]}" \
+    --mspdir "${org_root_in_container}/users/Admin@${org_domain}/msp"
 
   cp "${org_root}/msp/config.yaml" "${org_root}/users/Admin@${org_domain}/msp/config.yaml"
 
-  setup_org_tls_ca "${org_root}"
+  setup_org_tls_ca "${org_root}" "${org_root}/peers/${peer}/tls"
 }
 
 create_orderer_org_msp() {
   local org_domain="${DOMAIN}"
   local org_root="${ORG_DIR}/ordererOrganizations/${org_domain}"
+  local org_root_in_container="/crypto/organizations/ordererOrganizations/${org_domain}"
 
   mkdir -p "${org_root}"
 
-  run_ca_client "/crypto/organizations/ordererOrganizations/${org_domain}" enroll -u "https://${ORDERER_ORG}admin:${ORDERER_ORG}adminpw@${CA_HOST}:${CA_PORT}" \
+  run_ca_client "/crypto/organizations/ordererOrganizations/${org_domain}" enroll -u "${CA_SCHEME}://${ORDERER_ORG}admin:${ORDERER_ORG}adminpw@${CA_HOST}:${CA_PORT}" \
     --caname "${CA_NAME}" \
-    --tls.certfiles "${CA_TLS_CERT}"
+    "${TLS_ARGS[@]}"
 
   local ca_cert_file
   ca_cert_file=$(ls "${org_root}/msp/cacerts")
@@ -192,22 +203,23 @@ EOF
     local orderer_name=$1
     local orderer_fqdn="${orderer_name}.${org_domain}"
     local orderer_dir="${org_root}/orderers/${orderer_fqdn}"
+    local orderer_dir_in_container="${org_root_in_container}/orderers/${orderer_fqdn}"
 
     mkdir -p "${orderer_dir}/msp"
-    run_ca_client "/crypto/organizations/ordererOrganizations/${org_domain}" enroll -u "https://${orderer_name}:${orderer_name}pw@${CA_HOST}:${CA_PORT}" \
+    run_ca_client "/crypto/organizations/ordererOrganizations/${org_domain}" enroll -u "${CA_SCHEME}://${orderer_name}:${orderer_name}pw@${CA_HOST}:${CA_PORT}" \
       --caname "${CA_NAME}" \
-      --tls.certfiles "${CA_TLS_CERT}" \
-      --mspdir "${orderer_dir}/msp"
+      "${TLS_ARGS[@]}" \
+      --mspdir "${orderer_dir_in_container}/msp"
 
     cp "${org_root}/msp/config.yaml" "${orderer_dir}/msp/config.yaml"
 
-    run_ca_client "/crypto/organizations/ordererOrganizations/${org_domain}" enroll -u "https://${orderer_name}:${orderer_name}pw@${CA_HOST}:${CA_PORT}" \
+    run_ca_client "/crypto/organizations/ordererOrganizations/${org_domain}" enroll -u "${CA_SCHEME}://${orderer_name}:${orderer_name}pw@${CA_HOST}:${CA_PORT}" \
       --caname "${CA_NAME}" \
-      --tls.certfiles "${CA_TLS_CERT}" \
+      "${TLS_ARGS[@]}" \
       --enrollment.profile tls \
       --csr.hosts "${orderer_fqdn}" \
       --csr.hosts "localhost" \
-      --mspdir "${orderer_dir}/tls"
+      --mspdir "${orderer_dir_in_container}/tls"
 
     setup_tls_files "${orderer_dir}/tls"
   }
@@ -216,14 +228,14 @@ EOF
   create_orderer "${ORDERER1}"
 
   mkdir -p "${org_root}/users/Admin@${org_domain}/msp"
-  run_ca_client "/crypto/organizations/ordererOrganizations/${org_domain}" enroll -u "https://${ORDERER_ORG}admin:${ORDERER_ORG}adminpw@${CA_HOST}:${CA_PORT}" \
+  run_ca_client "/crypto/organizations/ordererOrganizations/${org_domain}" enroll -u "${CA_SCHEME}://${ORDERER_ORG}admin:${ORDERER_ORG}adminpw@${CA_HOST}:${CA_PORT}" \
     --caname "${CA_NAME}" \
-    --tls.certfiles "${CA_TLS_CERT}" \
-    --mspdir "${org_root}/users/Admin@${org_domain}/msp"
+    "${TLS_ARGS[@]}" \
+    --mspdir "${org_root_in_container}/users/Admin@${org_domain}/msp"
 
   cp "${org_root}/msp/config.yaml" "${org_root}/users/Admin@${org_domain}/msp/config.yaml"
 
-  setup_org_tls_ca "${org_root}"
+  setup_org_tls_ca "${org_root}" "${org_root}/orderers/${ORDERER0}.${org_domain}/tls"
 }
 
 create_org_msp "${ORG_J2}"

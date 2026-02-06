@@ -1,0 +1,12 @@
+# Zone2 generated artifacts (do not commit)
+zone2-ledger/crypto/ca/
+zone2-ledger/crypto/fabric-ca-client/
+zone2-ledger/crypto/organizations/
+zone2-ledger/crypto/channel-artifacts/
+
+# Optional local runtime outputs
+zone2-ledger/**/*.log
+
+# macOS
+.DS_Store
+**/.DS_Store
