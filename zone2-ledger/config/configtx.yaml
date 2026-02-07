@@ -98,11 +98,11 @@ Orderer: &OrdererDefaults
   EtcdRaft:
     Consenters:
       - Host: orderer0.traceops.local
-        Port: 7050
+        Port: 7053
         ClientTLSCert: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.crt
         ServerTLSCert: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.crt
       - Host: orderer1.traceops.local
-        Port: 8050
+        Port: 8053
         ClientTLSCert: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/server.crt
         ServerTLSCert: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/server.crt
   Organizations:
