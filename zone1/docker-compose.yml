@@ -48,8 +48,6 @@ services:
       - GRPC_TRACE=transport_security,tss
       - GRPC_VERBOSITY=DEBUG
       - NODE_TLS_REJECT_UNAUTHORIZED=0
-    ports:
-      - "3000:3000"
 
   keycloak:
     extends:

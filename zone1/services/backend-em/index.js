@@ -162,7 +162,7 @@ app.post('/decision', checkJwt, (req, res) => {
 
     res.json({
         status: "SUCCESS",
-        txHash: mockTxHash,
+        txHash: hash,
         alertId: alert.id
     });
 });
@@ -177,17 +177,4 @@ app.use((err, _req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`✅ EM Service running on port ${PORT}`);
-});
-
-// Middleware - gère les erreurs d'auth
-app.use((err, req, res, next) => {
-    if (err.name === 'UnauthorizedError') {
-      res.status(401).send('Invalid Token: ' + err.message);
-    } else {
-      next(err);
-    }
-});
-
-app.listen(PORT, () => {
-    console.log('EM Service running on port 3000');
 });
