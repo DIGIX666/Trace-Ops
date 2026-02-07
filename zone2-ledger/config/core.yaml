@@ -1,0 +1,42 @@
+peer:
+  id: peer0.orgj2.traceops.local
+  networkId: traceops
+  listenAddress: 0.0.0.0:7051
+  address: peer0.orgj2.traceops.local:7051
+  addressAutoDetect: false
+
+  localMspId: OrgJ2MSP
+  mspConfigPath: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/msp
+
+  tls:
+    enabled: true
+    cert:
+      file: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.crt
+    key:
+      file: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.key
+    rootcert:
+      file: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/ca.crt
+
+  fileSystemPath: /var/hyperledger/production
+
+ledger:
+  state:
+    stateDatabase: CouchDB
+    couchDBConfig:
+      couchDBAddress: couchdb0.orgj2.traceops.local:5984
+      username: admin
+      password: adminpw
+
+chaincode:
+  installTimeout: 300s
+  startuptimeout: 300s
+  executetimeout: 30s
+  keepalive:
+    interval: 10s
+    timeout: 20s
+
+operations:
+  listenAddress: 0.0.0.0:9443
+
+metrics:
+  provider: disabled
