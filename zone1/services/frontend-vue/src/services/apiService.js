@@ -9,7 +9,7 @@ export const store = reactive({
 export const fetchAlerts = async () => {
   try {
     // Remplace fetch par apiClient (l'intercepteur ajoute le token automatiquement)
-    const response = await apiClient.get('/j2/alerts');
+    const response = await apiClient.get('/em/alerts');
     store.alerts = response.data;
   } catch (error) {
     console.error("Erreur fetch alerts:", error);
@@ -19,7 +19,7 @@ export const fetchAlerts = async () => {
 // Injection (Terrain)
 export const injectAlert = async (alertData) => {
   try {
-    const response = await apiClient.post('/j2/alerts', alertData);
+    const response = await apiClient.post('/em/alerts', alertData);
     store.alerts.push(response.data);
     return response.data;
   } catch (error) {
@@ -30,7 +30,7 @@ export const injectAlert = async (alertData) => {
 // Analyse (J2)
 export const analyzeAlert = async (id) => {
   try {
-    await apiClient.post(`/j2/analyze/${id}`);
+    await apiClient.post(`/em/analyze/${id}`);
     await fetchAlerts(); // Recharge la liste
   } catch (error) {
     console.error("Erreur analyse:", error);
