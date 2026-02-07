@@ -16,14 +16,17 @@ This document explains how to start and verify Zone2 (Hyperledger Fabric) for th
 - `zone2-ledger/scripts/ca-bootstrap.sh`
 - `zone2-ledger/scripts/generate-channel-artifacts.sh`
 - `zone2-ledger/scripts/bootstrap-network.sh`
-- `zone2-ledger/scripts/test-preflight.sh`
+- `zone2-ledger/scripts/generate-connection-profiles.sh`
+- `zone2-ledger/scripts/run-unit-tests.sh`
+- `zone2-ledger/scripts/tests/generate_connection_profiles_test.sh`
+- `zone2-ledger/scripts/tests/preflight_test.sh`
 
 ## 1) Run preflight checks
 
 Run before each startup or commit:
 
 ```bash
-./zone2-ledger/scripts/test-preflight.sh
+./zone2-ledger/scripts/tests/preflight_test.sh
 ```
 
 Expected: `Preflight result: ... 0 failed`.
@@ -59,10 +62,9 @@ curl -s -u admin:adminpw http://localhost:6984/_up
 
 Expected: `{"status":"ok"}` for both CouchDB instances.
 
-## Recommended path
-
-- For normal usage, run [step 6](#6-bootstrap-the-network) directly (full automatic bootstrap).
-- Use steps 4 and 5 only when you need to debug or run the process manually step by step.
+> [!NOTE]
+> - For normal usage, run [step 6](#6-bootstrap-the-network) directly (full automatic bootstrap).
+> - Use steps 4 and 5 only when you need to debug or run the process manually step by step.
 
 ## 4) Bootstrap identities (once CA is up)
 
@@ -122,7 +124,67 @@ What it does:
 - starts orderers and peers
 - creates channel `traceops`, joins both peers, updates anchor peers.
 
-## 7) Stop or clean up
+## 7) Generate inter-zone connection profiles
+
+Generate SDK connection profiles for Zone1 (write) and Zone3 (read):
+
+```bash
+./zone2-ledger/scripts/generate-connection-profiles.sh
+```
+
+Output files:
+
+- `zone2-ledger/config/connection-profiles/zone1-write-connection.json`
+- `zone2-ledger/config/connection-profiles/zone3-read-connection.json`
+
+Notes:
+
+- These files include TLS CA certs inline.
+- For remote hosts, set `ZONE2_PUBLIC_HOST=<host-or-ip>` before running the script.
+- Generated profiles are local artifacts and are ignored by git.
+
+## 8) Minimal observability
+
+Check container health status:
+
+```bash
+docker compose -f zone2-ledger/compose/docker-compose.yaml ps
+```
+
+Read recent logs for all services:
+
+```bash
+docker compose -f zone2-ledger/compose/docker-compose.yaml logs --tail=100
+```
+
+Read recent logs for one service:
+
+```bash
+docker compose -f zone2-ledger/compose/docker-compose.yaml logs --tail=100 peer0.orgj2.traceops.local
+```
+
+Notes:
+
+- Compose now includes healthchecks for CA, orderers, peers, and CouchDB.
+- Compose now includes log rotation (`json-file`, max-size `10m`, max-file `3`).
+- Metrics endpoints are not enabled yet (optional next step).
+
+## 9) Run unit tests
+
+Run all current unit tests (chaincode + critical scripts):
+
+```bash
+./zone2-ledger/scripts/run-unit-tests.sh
+```
+
+Equivalent manual commands:
+
+```bash
+(cd zone2-ledger/chaincode/decision && go test ./...)
+./zone2-ledger/scripts/tests/generate_connection_profiles_test.sh
+```
+
+## 10) Stop or clean up
 
 Stop without deleting volumes:
 

@@ -40,3 +40,21 @@ func TestComputeLedgerHashMatchesCanonicalPayload(t *testing.T) {
 		t.Fatalf("hash mismatch: got %s, want %s", got, want)
 	}
 }
+
+func TestComputeLedgerHashRejectsInvalidJSON(t *testing.T) {
+	c := &DecisionContract{}
+
+	_, err := c.ComputeLedgerHash(nil, `{"a":1`)
+	if err == nil {
+		t.Fatalf("expected error for invalid JSON payload")
+	}
+}
+
+func TestComputeLedgerHashRejectsEmptyPayload(t *testing.T) {
+	c := &DecisionContract{}
+
+	_, err := c.ComputeLedgerHash(nil, "   ")
+	if err == nil {
+		t.Fatalf("expected error for empty payload")
+	}
+}

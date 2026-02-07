@@ -6,6 +6,7 @@ zone2-ledger/crypto/channel-artifacts/
 
 # Optional local runtime outputs
 zone2-ledger/**/*.log
+zone2-ledger/config/connection-profiles/*.json
 
 # macOS
 .DS_Store
