@@ -2,6 +2,8 @@ const express = require('express');
 const axios = require('axios');
 const { expressjwt: jwt } = require('express-jwt');
 const jwksRsa = require('jwks-rsa');
+const { submitDecision, queryDecision } = require('./fabricService');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = 3000;
@@ -41,15 +43,38 @@ app.post('/decision', checkJwt, async (req, res) => {
          return res.status(403).json({ error: "Rôle 'decideur' requis" });
     }
 
+    console.log("Hello World")
+    console.log(req.body)
+
     const { alertId, decision } = req.body;
 
-    // --- SIMULATION ZONE 2 ---
-    const crypto = require('crypto');
-    const mockTxHash = "0x" + crypto.randomBytes(32).toString('hex');
-    
-    await new Promise(r => setTimeout(r, 500));
-    // --- ---
+    const myID = alertId
+    const myData = decision
 
+    console.log(myID)
+    console.log(myData)
+        
+    const payloadStr = JSON.stringify(myData);
+    const hash = crypto.createHash('sha256').update(payloadStr).digest('hex');
+
+    try {
+        // --- ÉCRITURE ---
+        console.log("Envoi de la décision...");
+        await submitDecision(myID, myData, hash);
+
+        // --- LECTURE ---
+        console.log("Lecture immédiate...");
+        const record = await queryDecision(myID);
+        
+        console.log("Record récupéré depuis la Blockchain :");
+        console.log(`- ID: ${record.id}`);
+        console.log(`- TxID: ${record.txId}`);
+        console.log(`- Payload récupéré:`, record.payload);
+        
+    } catch (error) {
+        console.error("Échec :", error.message);
+    }
+    
     // --- MISE À JOUR ZONE 1 ---
     try {
         await axios.put(`${J2_SERVICE_URL}/internal/update_decision/${alertId}`, {
@@ -61,8 +86,8 @@ app.post('/decision', checkJwt, async (req, res) => {
 
         res.json({
             status: "SUCCESS",
-            txHash: mockTxHash,
-            alertId: alertId
+            txHash: "placeholder",
+            alertId: "placeholderma"
         });
 
     } catch (error) {

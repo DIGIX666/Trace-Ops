@@ -27,11 +27,8 @@ services:
     build: ./services/backend-j2
     container_name: trace-ops-j2
     environment:
-      # On pointe vers le nom du conteneur CouchDB de la Zone 2
-      - COUCHDB_URL=http://admin:adminpw@couchdb0.orgj2.traceops.local:5984
       - KEYCLOAK_URL=http://keycloak:8080
       - REALM_NAME=trace-ops
-      - DB_NAME=traceops_decision
     networks:
       - zone1-network
       - fabric-network # Connexion au réseau de la Zone 2
@@ -42,6 +39,15 @@ services:
     container_name: trace-ops-em
     networks:
       - zone1-network
+    extra_hosts:
+      - "peer0.orgem.traceops.local:host-gateway"
+      - "peer0.orgj2.traceops.local:host-gateway"
+      - "orderer1.traceops.local:host-gateway"
+      - "orderer0.traceops.local:host-gateway"
+    environment:
+      - GRPC_TRACE=transport_security,tss
+      - GRPC_VERBOSITY=DEBUG
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
 
   keycloak:
     extends:

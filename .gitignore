@@ -56,3 +56,4 @@ zone2-ledger/config/connection-profiles/*.json
 
 zone1-write-connection.json
 vendor
+wallet

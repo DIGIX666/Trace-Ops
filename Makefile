@@ -10,27 +10,27 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 z1-up:
-	docker compose -f $(ZONE1_DOCKER_PATH) up -d
+	docker compose -f $(COMPOSE_Z1) up -d
 
 z1-build:
-	docker compose -f "$(ZONE1_DOCKER_PATH)" build --no-cache
-	docker compose -f "$(ZONE1_DOCKER_PATH)" up -d
+	docker compose -f "$(COMPOSE_Z1)" build --no-cache
+	docker compose -f "$(COMPOSE_Z1)" up -d
 
 z1-down:
-	docker compose -f $(ZONE1_DOCKER_PATH) down
+	docker compose -f $(COMPOSE_Z1) down
 
 z1-stop:
-	docker compose -f $(ZONE1_DOCKER_PATH) stop
+	docker compose -f $(COMPOSE_Z1) stop
 
 z1-logs:
-	docker compose -f $(ZONE1_DOCKER_PATH) logs -f
+	docker compose -f $(COMPOSE_Z1) logs -f
 
-z1-clean: down
-	docker compose -f $(ZONE1_DOCKER_PATH) down -v
+z1-clean:
+	docker compose -f $(COMPOSE_Z1) down -v
 	docker system prune -f
 
 z1-ps:
-	docker compose -f $(ZONE1_DOCKER_PATH) ps
+	docker compose -f $(COMPOSE_Z1) ps
 
 z2-up:
 	docker compose -f $(COMPOSE_Z2) up -d
