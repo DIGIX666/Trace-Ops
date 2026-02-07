@@ -21,14 +21,20 @@ services:
     container_name: trace-ops-frontend
     networks:
       - zone1-network
-    # Ce conteneur expose le port 80 en interne, capté par le reverse-proxy
 
   # --- Service Moteur J2 (Backend Python) ---
   backend-j2:
     build: ./services/backend-j2
     container_name: trace-ops-j2
+    environment:
+      # On pointe vers le nom du conteneur CouchDB de la Zone 2
+      - COUCHDB_URL=http://admin:adminpw@couchdb0.orgj2.traceops.local:5984
+      - KEYCLOAK_URL=http://keycloak:8080
+      - REALM_NAME=trace-ops
+      - DB_NAME=traceops_decision
     networks:
       - zone1-network
+      - fabric-network # Connexion au réseau de la Zone 2
 
   # --- Service Décision EM (Backend Node.js API) ---
   backend-em:
@@ -63,6 +69,10 @@ services:
 networks:
   zone1-network:
     driver: bridge
+  # On référence le réseau défini dans la Zone 2
+  fabric-network:
+    external: true
+    name: traceops
 
 volumes:
   keycloak_db_data:

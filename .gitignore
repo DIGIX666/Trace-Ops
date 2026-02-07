@@ -53,3 +53,6 @@ zone2-ledger/config/connection-profiles/*.json
 # macOS
 .DS_Store
 **/.DS_Store
+
+zone1-write-connection.json
+vendor
