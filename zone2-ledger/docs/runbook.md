@@ -13,9 +13,12 @@ This document explains how to start and verify Zone2 (Hyperledger Fabric) for th
 - `zone2-ledger/compose/docker-compose.yaml`
 - `zone2-ledger/config/ca.env`
 - `zone2-ledger/config/configtx.yaml`
+- `zone2-ledger/config/orderer0.yaml`
+- `zone2-ledger/config/orderer1.yaml`
 - `zone2-ledger/scripts/ca-bootstrap.sh`
 - `zone2-ledger/scripts/generate-channel-artifacts.sh`
 - `zone2-ledger/scripts/bootstrap-network.sh`
+- `zone2-ledger/scripts/deploy-chaincode.sh`
 - `zone2-ledger/scripts/generate-connection-profiles.sh`
 - `zone2-ledger/scripts/run-unit-tests.sh`
 - `zone2-ledger/scripts/tests/generate_connection_profiles_test.sh`
@@ -124,7 +127,27 @@ What it does:
 - starts orderers and peers
 - creates channel `traceops`, joins both peers, updates anchor peers.
 
-## 7) Generate inter-zone connection profiles
+## 7) Deploy decision chaincode
+
+Deploy `decision` to channel `traceops` using Fabric lifecycle:
+
+```bash
+./zone2-ledger/scripts/deploy-chaincode.sh
+```
+
+What it does:
+
+- packages and installs chaincode on both peers,
+- approves definition for OrgJ2 and OrgEM,
+- commits chaincode definition with endorsement policy,
+- runs a smoke invoke/query by default.
+
+Notes:
+
+- Defaults: `CHAINCODE_NAME=decision`, `CHAINCODE_VERSION=1.0`, `CHAINCODE_SEQUENCE=1`.
+- Set `RUN_SMOKE_TEST=false` to skip invoke/query smoke test.
+
+## 8) Generate inter-zone connection profiles
 
 Generate SDK connection profiles for Zone1 (write) and Zone3 (read):
 
@@ -143,7 +166,7 @@ Notes:
 - For remote hosts, set `ZONE2_PUBLIC_HOST=<host-or-ip>` before running the script.
 - Generated profiles are local artifacts and are ignored by git.
 
-## 8) Minimal observability
+## 9) Minimal observability
 
 Check container health status:
 
@@ -169,7 +192,7 @@ Notes:
 - Compose now includes log rotation (`json-file`, max-size `10m`, max-file `3`).
 - Metrics endpoints are not enabled yet (optional next step).
 
-## 9) Run unit tests
+## 10) Run unit tests
 
 Run all current unit tests (chaincode + critical scripts):
 
@@ -184,7 +207,7 @@ Equivalent manual commands:
 ./zone2-ledger/scripts/tests/generate_connection_profiles_test.sh
 ```
 
-## 10) Stop or clean up
+## 11) Stop or clean up
 
 Stop without deleting volumes:
 

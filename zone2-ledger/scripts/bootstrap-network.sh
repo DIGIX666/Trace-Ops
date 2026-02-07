@@ -119,3 +119,4 @@ run_peer_cli orgj2 "peer channel update -o orderer0.traceops.local:7050 -c ${CHA
 run_peer_cli orgem "peer channel update -o orderer0.traceops.local:7050 -c ${CHANNEL_NAME} -f /crypto/channel-artifacts/OrgEMMSPanchors.tx --tls --cafile ${ORDERER_CA} --clientauth --certfile /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.crt --keyfile /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.key"
 
 echo "Network bootstrap completed for channel '${CHANNEL_NAME}'."
+echo "Next step: run ${ROOT_DIR}/scripts/deploy-chaincode.sh"
