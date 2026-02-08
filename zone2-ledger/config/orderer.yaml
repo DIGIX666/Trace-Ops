@@ -1,4 +1,5 @@
 General:
+  # Legacy shared orderer template (kept for compatibility/reference)
   ListenAddress: 0.0.0.0
   ListenPort: 7050
   LocalMSPID: OrdererMSP

@@ -25,6 +25,7 @@ type DecisionRecord struct {
 }
 
 func canonicalizeJSON(raw string) ([]byte, error) {
+	// Unmarshal + marshal gives deterministic key ordering for hash parity checks
 	var v any
 	if err := json.Unmarshal([]byte(raw), &v); err != nil {
 		return nil, fmt.Errorf("payload is not valid JSON: %w", err)
@@ -44,6 +45,7 @@ func computeSHA256Hex(input []byte) string {
 }
 
 func txTimestampString(ctx contractapi.TransactionContextInterface) string {
+	// Keep an easy-to-read timestamp string for demos and runbook checks
 	ts, err := ctx.GetStub().GetTxTimestamp()
 	if err != nil {
 		return ""
@@ -79,6 +81,7 @@ func (c *DecisionContract) SubmitDecision(ctx contractapi.TransactionContextInte
 	}
 
 	ledgerHash := computeSHA256Hex(normalizedPayload)
+	// Double-check app-side hash against ledger-side recomputation
 	if ledgerHash != appHash {
 		return fmt.Errorf("hash mismatch: appHash=%s ledgerHash=%s", appHash, ledgerHash)
 	}
@@ -106,6 +109,7 @@ func (c *DecisionContract) SubmitDecision(ctx contractapi.TransactionContextInte
 	if err != nil {
 		return fmt.Errorf("failed to create hash index key: %w", err)
 	}
+	// Secondary index enables direct lookup by hash (Zone3 read path)
 	if err := ctx.GetStub().PutState(idxKey, []byte{0}); err != nil {
 		return fmt.Errorf("failed to store hash index: %w", err)
 	}

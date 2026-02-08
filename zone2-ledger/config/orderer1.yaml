@@ -1,4 +1,5 @@
 General:
+  # Dedicated config for orderer1 (client port 8050, cluster port 8053)
   ListenAddress: 0.0.0.0
   ListenPort: 8050
   LocalMSPID: OrdererMSP
@@ -15,6 +16,7 @@ General:
       - /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt
 
   Cluster:
+    # Raft cluster listener/certs must match configtx consenters metadata
     ListenAddress: 0.0.0.0
     ListenPort: 8053
     ServerCertificate: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/server.crt
@@ -28,6 +30,7 @@ FileLedger:
   Location: /var/hyperledger/production/orderer
 
 Consensus:
+  # Persist Raft WAL/snapshots for cold restart reliability
   WALDir: /var/hyperledger/production/orderer/etcdraft/wal
   SnapDir: /var/hyperledger/production/orderer/etcdraft/snapshot
 

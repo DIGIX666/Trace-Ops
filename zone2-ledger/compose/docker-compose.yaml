@@ -1,4 +1,5 @@
 services:
+  # Fabric CA used to register/enroll org, peer, and orderer identities
   ca.traceops.local:
     image: hyperledger/fabric-ca:1.5.16
     container_name: ca.traceops.local
@@ -32,6 +33,7 @@ services:
       - traceops
 
   orderer0.traceops.local:
+    # Orderer 0 serves client traffic on 7050 and Raft cluster traffic via orderer0.yaml
     image: hyperledger/fabric-orderer:2.5
     container_name: orderer0.traceops.local
     hostname: orderer0.traceops.local
@@ -79,6 +81,7 @@ services:
       - ca.traceops.local
 
   orderer1.traceops.local:
+    # Orderer 1 mirrors orderer0 to provide 2-node Raft governance POC
     image: hyperledger/fabric-orderer:2.5
     container_name: orderer1.traceops.local
     hostname: orderer1.traceops.local
@@ -126,6 +129,7 @@ services:
       - ca.traceops.local
 
   couchdb0.orgj2.traceops.local:
+    # CouchDB backing world state for OrgJ2 peer
     image: couchdb:3.3
     container_name: couchdb0.orgj2.traceops.local
     hostname: couchdb0.orgj2.traceops.local
@@ -151,6 +155,7 @@ services:
       - traceops
 
   couchdb0.orgem.traceops.local:
+    # CouchDB backing world state for OrgEM peer
     image: couchdb:3.3
     container_name: couchdb0.orgem.traceops.local
     hostname: couchdb0.orgem.traceops.local
@@ -176,6 +181,7 @@ services:
       - traceops
 
   peer0.orgj2.traceops.local:
+    # OrgJ2 endorsing peer + chaincode launcher
     image: hyperledger/fabric-peer:2.5
     container_name: peer0.orgj2.traceops.local
     hostname: peer0.orgj2.traceops.local
@@ -233,6 +239,7 @@ services:
       - ca.traceops.local
 
   peer0.orgem.traceops.local:
+    # OrgEM endorsing peer + chaincode launcher
     image: hyperledger/fabric-peer:2.5
     container_name: peer0.orgem.traceops.local
     hostname: peer0.orgem.traceops.local
@@ -294,6 +301,7 @@ networks:
     name: traceops
 
 volumes:
+  # Persist ledger and CouchDB data across container restarts
   orderer0-data:
   orderer1-data:
   peer0-j2-data:

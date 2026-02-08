@@ -5,6 +5,7 @@ ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 CONFIG_ENV="${ROOT_DIR}/config/ca.env"
 
 if [ -f "${CONFIG_ENV}" ]; then
+  # Load defaults from ca.env while still allowing env override at runtime
   set -a
   . "${CONFIG_ENV}"
   set +a
@@ -47,6 +48,7 @@ if [ "${CA_SCHEME}" = "https" ]; then
 fi
 
 run_ca_client() {
+  # Keep fabric-ca-client execution containerized (no local binary dependency)
   local client_home=$1
   shift
   docker run --rm \
@@ -62,6 +64,7 @@ mkdir -p "${CRYPTO_DIR}/fabric-ca-client"
 run_ca_client "/crypto/fabric-ca-client" enroll -u "${CA_URL}" --caname "${CA_NAME}" "${TLS_ARGS[@]}"
 
 register_id() {
+  # Register all identities once, then enroll them into MSP/TLS directories
   local name=$1
   local secret=$2
   local type=$3
@@ -82,6 +85,7 @@ register_id "${ORDERER0}" "${ORDERER0}pw" orderer
 register_id "${ORDERER1}" "${ORDERER1}pw" orderer
 
 setup_tls_files() {
+  # Fabric components expect canonical TLS filenames (ca.crt/server.crt/server.key)
   local tls_dir=$1
   local ca_file
   local signcert
@@ -97,6 +101,7 @@ setup_tls_files() {
 }
 
 setup_org_tls_ca() {
+  # Provide org-level tlscacerts for SDK and MSP validation paths
   local org_root=$1
   local tls_source_dir=$2
   local ca_file
@@ -107,6 +112,7 @@ setup_org_tls_ca() {
 }
 
 setup_node_tls_ca() {
+  # Ensure each node MSP includes tlscacerts for mutual TLS checks
   local node_msp_dir=$1
   local node_tls_dir=$2
   local ca_file
@@ -117,6 +123,7 @@ setup_node_tls_ca() {
 }
 
 create_org_msp() {
+  # Create one peer org layout: org MSP, peer MSP/TLS, admin MSP
   local org=$1
   local org_domain="${org}.${DOMAIN}"
   local peer="peer0.${org_domain}"
@@ -180,6 +187,7 @@ EOF
 }
 
 create_orderer_org_msp() {
+  # Create orderer org layout for both orderer nodes and org admi
   local org_domain="${DOMAIN}"
   local org_root="${ORG_DIR}/ordererOrganizations/${org_domain}"
   local org_root_in_container="/crypto/organizations/ordererOrganizations/${org_domain}"

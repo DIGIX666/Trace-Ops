@@ -16,6 +16,7 @@ pass() {
 make_cert() {
   local file_path=$1
   mkdir -p "$(dirname "${file_path}")"
+  # Static test cert content is enough for JSON generation checks
   cat > "${file_path}" <<'EOF'
 -----BEGIN CERTIFICATE-----
 MIIBwzCCAWmgAwIBAgIUZ2VuZXJhdGVkLXRlc3QtY2VydDAKBggqhkjOPQQDAjAa
@@ -38,6 +39,8 @@ assert_json_file() {
 
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "${tmp_dir}"' EXIT
+
+# Run tests in a temp sandbox to avoid mutating repository files
 
 mkdir -p "${tmp_dir}/scripts"
 cp "${SOURCE_SCRIPT}" "${tmp_dir}/scripts/generate-connection-profiles.sh"
