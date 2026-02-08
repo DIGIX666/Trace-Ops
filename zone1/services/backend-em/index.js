@@ -1,4 +1,4 @@
-const { submitDecision, queryDecision } = require('./fabricService.js');
+const { pushData, pullData } = require('./fabricService.js');
 const express = require('express');
 const axios = require('axios');
 const { expressjwt: jwt } = require('express-jwt');
@@ -133,11 +133,11 @@ app.post('/decision', checkJwt, async (req, res) => {
     try { 
         // --- ÉCRITURE ---
         console.log("Envoi de la décision...");
-        await submitDecision(alertId, decision, hash);
+        await pushData(alertId, decision, hash);
 
         // --- LECTURE ---
         console.log("Lecture immédiate...");
-        const record = await queryDecision(alertId);
+        const record = await pullData(alertId);
         
         console.log("Record récupéré depuis la Blockchain :");
         console.log(`- ID: ${record.id}`);
@@ -158,8 +158,6 @@ app.post('/decision', checkJwt, async (req, res) => {
     alert.txHash = hash;
     alert.status = "DECIDED";
     // ---
-
-    console.log(`Décision enregistrée par ${req.auth.preferred_username} → ${decision}`);
 
     res.json({
         status: "SUCCESS",
