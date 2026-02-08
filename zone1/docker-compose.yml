@@ -1,0 +1,105 @@
+services:
+  # --- Service Init Certificats TLS (auto-génération nginx) ---
+  cert-init:
+    image: alpine:3.20
+    container_name: trace-ops-cert-init
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        apk add --no-cache openssl >/dev/null
+        mkdir -p /certs
+        if [ ! -f /certs/self-signed.crt ] || [ ! -f /certs/self-signed.key ]; then
+          openssl req -x509 -nodes -newkey rsa:2048 -days 365 -subj '/C=FR/ST=NA/L=NA/O=TraceOps/CN=localhost' -keyout /certs/self-signed.key -out /certs/self-signed.crt
+        fi
+    volumes:
+      - ./nginx/certs:/certs
+
+  # --- Service Proxy Principal (Gère le HTTPS /443) ---
+  reverse-proxy:
+    image: nginx:alpine
+    container_name: trace-ops-proxy
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certs:/etc/nginx/certs
+    networks:
+      - zone1-network
+    depends_on:
+      cert-init:
+        condition: service_completed_successfully
+      frontend-vue:
+        condition: service_started
+      backend-j2:
+        condition: service_started
+      backend-em:
+        condition: service_started
+
+  # --- Service Frontend Vue.js ---
+  frontend-vue:
+    build: ./services/frontend-vue
+    container_name: trace-ops-frontend
+    networks:
+      - zone1-network
+
+  # --- Service Moteur J2 (Backend Python) ---
+  backend-j2:
+    build: ./services/backend-j2
+    container_name: trace-ops-j2
+    environment:
+      - KEYCLOAK_URL=http://keycloak:8080
+      - REALM_NAME=trace-ops
+    networks:
+      - zone1-network
+
+  # --- Service Décision EM (Backend Node.js API) ---
+  backend-em:
+    build: ./services/backend-em
+    container_name: trace-ops-em
+    networks:
+      - zone1-network
+      - fabric-network
+    extra_hosts:
+      - "peer0.orgem.traceops.local:host-gateway"
+      - "peer0.orgj2.traceops.local:host-gateway"
+      - "orderer1.traceops.local:host-gateway"
+      - "orderer0.traceops.local:host-gateway"
+    environment:
+      - GRPC_TRACE=transport_security,tss
+      - GRPC_VERBOSITY=DEBUG
+
+  keycloak:
+    extends:
+      file: ../keycloak-config/docker-compose.keycloak.yml
+      service: keycloak
+    command: start-dev --import-realm
+    environment:
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+    volumes:
+      - ../keycloak-config/realms:/opt/keycloak/data/import
+    networks:
+      - zone1-network
+    ports:
+      - "8080:8080"
+
+  keycloak-db:
+    extends:
+      file: ../keycloak-config/docker-compose.keycloak.yml
+      service: keycloak-db
+    networks:
+      - zone1-network
+
+networks:
+  zone1-network:
+    driver: bridge
+  # On référence le réseau défini dans la Zone 2
+  fabric-network:
+    external: true
+    name: traceops
+
+volumes:
+  keycloak_db_data:

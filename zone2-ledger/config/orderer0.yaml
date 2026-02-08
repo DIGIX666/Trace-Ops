@@ -1,0 +1,44 @@
+General:
+  # Dedicated config for orderer0 (client port 7050, cluster port 7053)
+  ListenAddress: 0.0.0.0
+  ListenPort: 7050
+  LocalMSPID: OrdererMSP
+  LocalMSPDir: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/msp
+
+  TLS:
+    Enabled: true
+    PrivateKey: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.key
+    Certificate: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.crt
+    RootCAs:
+      - /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt
+    ClientAuthRequired: true
+    ClientRootCAs:
+      - /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt
+
+  Cluster:
+    # Raft cluster listener/certs must match configtx consenters metadata
+    ListenAddress: 0.0.0.0
+    ListenPort: 7053
+    ServerCertificate: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.crt
+    ServerPrivateKey: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.key
+    ClientCertificate: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.crt
+    ClientPrivateKey: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.key
+    RootCAs:
+      - /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt
+
+FileLedger:
+  Location: /var/hyperledger/production/orderer
+
+Consensus:
+  # Persist Raft WAL/snapshots for cold restart reliability
+  WALDir: /var/hyperledger/production/orderer/etcdraft/wal
+  SnapDir: /var/hyperledger/production/orderer/etcdraft/snapshot
+
+ChannelParticipation:
+  Enabled: false
+
+Operations:
+  ListenAddress: 0.0.0.0:9443
+
+Metrics:
+  Provider: disabled

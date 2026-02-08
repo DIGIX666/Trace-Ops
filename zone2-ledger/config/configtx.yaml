@@ -1,0 +1,164 @@
+Organizations:
+  # Single orderer org + two peer orgs for governance endorsement demo
+  - &OrdererOrg
+    Name: OrdererOrg
+    ID: OrdererMSP
+    MSPDir: /crypto/organizations/ordererOrganizations/traceops.local/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrdererMSP.admin')"
+
+  - &OrgJ2
+    Name: OrgJ2MSP
+    ID: OrgJ2MSP
+    MSPDir: /crypto/organizations/peerOrganizations/orgj2.traceops.local/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrgJ2MSP.admin', 'OrgJ2MSP.peer', 'OrgJ2MSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrgJ2MSP.admin', 'OrgJ2MSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrgJ2MSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('OrgJ2MSP.peer')"
+    AnchorPeers:
+      - Host: peer0.orgj2.traceops.local
+        Port: 7051
+
+  - &OrgEM
+    Name: OrgEMMSP
+    ID: OrgEMMSP
+    MSPDir: /crypto/organizations/peerOrganizations/orgem.traceops.local/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrgEMMSP.admin', 'OrgEMMSP.peer', 'OrgEMMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrgEMMSP.admin', 'OrgEMMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrgEMMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('OrgEMMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.orgem.traceops.local
+        Port: 9051
+
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_0: true
+
+Application: &ApplicationDefaults
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  # Client-facing orderer endpoints
+  Addresses:
+    - orderer0.traceops.local:7050
+    - orderer1.traceops.local:8050
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 10
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  EtcdRaft:
+    # Cluster ports used for Raft communication between orderers
+    Consenters:
+      - Host: orderer0.traceops.local
+        Port: 7053
+        ClientTLSCert: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.crt
+        ServerTLSCert: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.crt
+      - Host: orderer1.traceops.local
+        Port: 8053
+        ClientTLSCert: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/server.crt
+        ServerTLSCert: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/server.crt
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+  Capabilities:
+    <<: *OrdererCapabilities
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+Profiles:
+  # Genesis profile initializes system channel and consortium
+  TwoOrgsOrdererGenesis:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+    Consortiums:
+      TraceOpsConsortium:
+        Organizations:
+          - *OrgJ2
+          - *OrgEM
+
+  TwoOrgsChannel:
+    # Application channel profile used to create "traceops"
+    <<: *ChannelDefaults
+    Consortium: TraceOpsConsortium
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *OrgJ2
+        - *OrgEM

@@ -1,0 +1,312 @@
+name: zone2
+
+services:
+  # Fabric CA used to register/enroll org, peer, and orderer identities
+  ca.traceops.local:
+    image: hyperledger/fabric-ca:1.5.16
+    container_name: ca.traceops.local
+    hostname: ca.traceops.local
+    environment:
+      FABRIC_CA_HOME: /etc/hyperledger/fabric-ca-server
+      FABRIC_CA_SERVER_CA_NAME: ca-traceops
+      FABRIC_CA_SERVER_PORT: 7054
+      FABRIC_CA_SERVER_CSR_HOSTS: ca.traceops.local,localhost
+    command: >
+      sh -c '
+        fabric-ca-server init -b admin:adminpw --ca.name ca-traceops --csr.hosts ca.traceops.local --csr.hosts localhost &&
+        fabric-ca-server start -b admin:adminpw --ca.name ca-traceops
+      '
+    ports:
+      - "7054:7054"
+    healthcheck:
+      test: ["CMD-SHELL", "pidof fabric-ca-server >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - ../crypto/ca:/etc/hyperledger/fabric-ca-server
+    networks:
+      - traceops
+
+  orderer0.traceops.local:
+    # Orderer 0 serves client traffic on 7050 and Raft cluster traffic via orderer0.yaml
+    image: hyperledger/fabric-orderer:2.5
+    container_name: orderer0.traceops.local
+    hostname: orderer0.traceops.local
+    environment:
+      FABRIC_CFG_PATH: /etc/hyperledger/fabric
+      ORDERER_GENERAL_LISTENADDRESS: 0.0.0.0
+      ORDERER_GENERAL_LISTENPORT: 7050
+      ORDERER_GENERAL_BOOTSTRAPMETHOD: file
+      ORDERER_GENERAL_BOOTSTRAPFILE: /etc/hyperledger/fabric/genesisblock
+      ORDERER_GENERAL_LOCALMSPID: OrdererMSP
+      ORDERER_GENERAL_LOCALMSPDIR: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/msp
+      ORDERER_GENERAL_TLS_ENABLED: "true"
+      ORDERER_GENERAL_TLS_PRIVATEKEY: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.key
+      ORDERER_GENERAL_TLS_CERTIFICATE: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.crt
+      ORDERER_GENERAL_TLS_ROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt]'
+      ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED: "true"
+      ORDERER_GENERAL_TLS_CLIENTROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt]'
+      ORDERER_CHANNELPARTICIPATION_ENABLED: "false"
+      ORDERER_ADMIN_TLS_ENABLED: "false"
+      ORDERER_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
+    working_dir: /root
+    command: orderer
+    ports:
+      - "7050:7050"
+      - "9443:9443"
+    healthcheck:
+      test: ["CMD-SHELL", "pidof orderer >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - ../config/orderer0.yaml:/etc/hyperledger/fabric/orderer.yaml
+      - ../crypto/channel-artifacts/genesis.block:/etc/hyperledger/fabric/genesisblock
+      - ../crypto:/crypto
+      - orderer0-data:/var/hyperledger/production/orderer
+    networks:
+      - traceops
+    depends_on:
+      - ca.traceops.local
+
+  orderer1.traceops.local:
+    # Orderer 1 mirrors orderer0 to provide 2-node Raft governance POC
+    image: hyperledger/fabric-orderer:2.5
+    container_name: orderer1.traceops.local
+    hostname: orderer1.traceops.local
+    environment:
+      FABRIC_CFG_PATH: /etc/hyperledger/fabric
+      ORDERER_GENERAL_LISTENADDRESS: 0.0.0.0
+      ORDERER_GENERAL_LISTENPORT: 8050
+      ORDERER_GENERAL_BOOTSTRAPMETHOD: file
+      ORDERER_GENERAL_BOOTSTRAPFILE: /etc/hyperledger/fabric/genesisblock
+      ORDERER_GENERAL_LOCALMSPID: OrdererMSP
+      ORDERER_GENERAL_LOCALMSPDIR: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/msp
+      ORDERER_GENERAL_TLS_ENABLED: "true"
+      ORDERER_GENERAL_TLS_PRIVATEKEY: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/server.key
+      ORDERER_GENERAL_TLS_CERTIFICATE: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/server.crt
+      ORDERER_GENERAL_TLS_ROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt]'
+      ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED: "true"
+      ORDERER_GENERAL_TLS_CLIENTROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt]'
+      ORDERER_CHANNELPARTICIPATION_ENABLED: "false"
+      ORDERER_ADMIN_TLS_ENABLED: "false"
+      ORDERER_OPERATIONS_LISTENADDRESS: 0.0.0.0:10443
+    working_dir: /root
+    command: orderer
+    ports:
+      - "8050:8050"
+      - "10443:10443"
+    healthcheck:
+      test: ["CMD-SHELL", "pidof orderer >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - ../config/orderer1.yaml:/etc/hyperledger/fabric/orderer.yaml
+      - ../crypto/channel-artifacts/genesis.block:/etc/hyperledger/fabric/genesisblock
+      - ../crypto:/crypto
+      - orderer1-data:/var/hyperledger/production/orderer
+    networks:
+      - traceops
+    depends_on:
+      - ca.traceops.local
+
+  couchdb0.orgj2.traceops.local:
+    # CouchDB backing world state for OrgJ2 peer
+    image: couchdb:3.3
+    container_name: couchdb0.orgj2.traceops.local
+    hostname: couchdb0.orgj2.traceops.local
+    environment:
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: adminpw
+    ports:
+      - "5984:5984"
+    healthcheck:
+      test: ["CMD-SHELL", "pidof beam.smp >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - couchdb0-j2-data:/opt/couchdb/data
+    networks:
+      - traceops
+
+  couchdb0.orgem.traceops.local:
+    # CouchDB backing world state for OrgEM peer
+    image: couchdb:3.3
+    container_name: couchdb0.orgem.traceops.local
+    hostname: couchdb0.orgem.traceops.local
+    environment:
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: adminpw
+    ports:
+      - "6984:5984"
+    healthcheck:
+      test: ["CMD-SHELL", "pidof beam.smp >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - couchdb0-em-data:/opt/couchdb/data
+    networks:
+      - traceops
+
+  peer0.orgj2.traceops.local:
+    # OrgJ2 endorsing peer + chaincode launcher
+    image: hyperledger/fabric-peer:2.5
+    container_name: peer0.orgj2.traceops.local
+    hostname: peer0.orgj2.traceops.local
+    environment:
+      FABRIC_CFG_PATH: /etc/hyperledger/fabric
+      CORE_PEER_ID: peer0.orgj2.traceops.local
+      CORE_PEER_ADDRESS: peer0.orgj2.traceops.local:7051
+      CORE_PEER_LISTENADDRESS: 0.0.0.0:7051
+      CORE_PEER_CHAINCODEADDRESS: peer0.orgj2.traceops.local:7052
+      CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:7052
+      CORE_PEER_GOSSIP_BOOTSTRAP: peer0.orgj2.traceops.local:7051
+      CORE_PEER_GOSSIP_EXTERNALENDPOINT: peer0.orgj2.traceops.local:7051
+      CORE_PEER_LOCALMSPID: OrgJ2MSP
+      CORE_PEER_MSPCONFIGPATH: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/msp
+      CORE_PEER_TLS_ENABLED: "true"
+      CORE_PEER_TLS_CERT_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.crt
+      CORE_PEER_TLS_KEY_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.key
+      CORE_PEER_TLS_ROOTCERT_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/ca.crt
+      CORE_PEER_TLS_CLIENTAUTHREQUIRED: "true"
+      CORE_PEER_TLS_CLIENTROOTCAS_FILES: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/ca.crt
+      CORE_PEER_TLS_CLIENTCERT_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.crt
+      CORE_PEER_TLS_CLIENTKEY_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.key
+      CORE_VM_ENDPOINT: unix:///var/run/docker.sock
+      CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: traceops
+      CORE_LEDGER_STATE_STATEDATABASE: CouchDB
+      CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS: couchdb0.orgj2.traceops.local:5984
+      CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME: admin
+      CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD: adminpw
+      CORE_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
+    working_dir: /root
+    command: peer node start
+    ports:
+      - "7051:7051"
+      - "7052:7052"
+      - "9444:9443"
+    healthcheck:
+      test: ["CMD-SHELL", "pidof peer >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - ../crypto:/crypto
+      - /var/run/docker.sock:/var/run/docker.sock
+      - peer0-j2-data:/var/hyperledger/production
+    networks:
+      - traceops
+    depends_on:
+      - couchdb0.orgj2.traceops.local
+      - ca.traceops.local
+
+  peer0.orgem.traceops.local:
+    # OrgEM endorsing peer + chaincode launcher
+    image: hyperledger/fabric-peer:2.5
+    container_name: peer0.orgem.traceops.local
+    hostname: peer0.orgem.traceops.local
+    environment:
+      FABRIC_CFG_PATH: /etc/hyperledger/fabric
+      CORE_PEER_ID: peer0.orgem.traceops.local
+      CORE_PEER_ADDRESS: peer0.orgem.traceops.local:9051
+      CORE_PEER_LISTENADDRESS: 0.0.0.0:9051
+      CORE_PEER_CHAINCODEADDRESS: peer0.orgem.traceops.local:9052
+      CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:9052
+      CORE_PEER_GOSSIP_BOOTSTRAP: peer0.orgem.traceops.local:9051
+      CORE_PEER_GOSSIP_EXTERNALENDPOINT: peer0.orgem.traceops.local:9051
+      CORE_PEER_LOCALMSPID: OrgEMMSP
+      CORE_PEER_MSPCONFIGPATH: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/msp
+      CORE_PEER_TLS_ENABLED: "true"
+      CORE_PEER_TLS_CERT_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.crt
+      CORE_PEER_TLS_KEY_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.key
+      CORE_PEER_TLS_ROOTCERT_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/ca.crt
+      CORE_PEER_TLS_CLIENTAUTHREQUIRED: "true"
+      CORE_PEER_TLS_CLIENTROOTCAS_FILES: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/ca.crt
+      CORE_PEER_TLS_CLIENTCERT_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.crt
+      CORE_PEER_TLS_CLIENTKEY_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.key
+      CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: traceops
+      CORE_VM_ENDPOINT: unix:///var/run/docker.sock
+      CORE_LEDGER_STATE_STATEDATABASE: CouchDB
+      CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS: couchdb0.orgem.traceops.local:5984
+      CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME: admin
+      CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD: adminpw
+      CORE_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
+    working_dir: /root
+    command: peer node start
+    ports:
+      - "9051:9051"
+      - "9052:9052"
+      - "10444:9443"
+    healthcheck:
+      test: ["CMD-SHELL", "pidof peer >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - ../crypto:/crypto
+      - /var/run/docker.sock:/var/run/docker.sock
+      - peer0-em-data:/var/hyperledger/production
+    networks:
+      - traceops
+    depends_on:
+      - couchdb0.orgem.traceops.local
+      - ca.traceops.local
+
+networks:
+  traceops:
+    name: traceops
+
+volumes:
+  # Persist ledger and CouchDB data across container restarts
+  orderer0-data:
+  orderer1-data:
+  peer0-j2-data:
+  peer0-em-data:
+  couchdb0-j2-data:
+  couchdb0-em-data:
