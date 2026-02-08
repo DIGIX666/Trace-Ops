@@ -60,7 +60,7 @@ services:
     container_name: trace-ops-em
     networks:
       - zone1-network
-      - fabric-network
+      - traceops
     extra_hosts:
       - "peer0.orgem.traceops.local:host-gateway"
       - "peer0.orgj2.traceops.local:host-gateway"
@@ -69,6 +69,14 @@ services:
     environment:
       - GRPC_TRACE=transport_security,tss
       - GRPC_VERBOSITY=DEBUG
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ./wallet:/app/wallet:ro
+      - ./connection-profiles:/app/connection-profiles:ro
 
   keycloak:
     extends:
@@ -93,13 +101,31 @@ services:
     networks:
       - zone1-network
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: traceops-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: trace-ops-db
+      POSTGRES_USER: traceops
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - zone1-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U traceops -d trace-ops-db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 networks:
   zone1-network:
     driver: bridge
-  # On référence le réseau défini dans la Zone 2
-  fabric-network:
+  traceops:
     external: true
     name: traceops
 
 volumes:
   keycloak_db_data:
+  postgres_data:

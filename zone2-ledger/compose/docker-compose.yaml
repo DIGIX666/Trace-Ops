@@ -50,9 +50,9 @@ services:
       ORDERER_GENERAL_TLS_ENABLED: "true"
       ORDERER_GENERAL_TLS_PRIVATEKEY: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.key
       ORDERER_GENERAL_TLS_CERTIFICATE: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.crt
-      ORDERER_GENERAL_TLS_ROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt]'
+      ORDERER_GENERAL_TLS_ROOTCAS: "[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt]"
       ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED: "true"
-      ORDERER_GENERAL_TLS_CLIENTROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt]'
+      ORDERER_GENERAL_TLS_CLIENTROOTCAS: "[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt]"
       ORDERER_CHANNELPARTICIPATION_ENABLED: "false"
       ORDERER_ADMIN_TLS_ENABLED: "false"
       ORDERER_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
@@ -98,9 +98,9 @@ services:
       ORDERER_GENERAL_TLS_ENABLED: "true"
       ORDERER_GENERAL_TLS_PRIVATEKEY: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/server.key
       ORDERER_GENERAL_TLS_CERTIFICATE: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/server.crt
-      ORDERER_GENERAL_TLS_ROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt]'
+      ORDERER_GENERAL_TLS_ROOTCAS: "[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt]"
       ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED: "true"
-      ORDERER_GENERAL_TLS_CLIENTROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt]'
+      ORDERER_GENERAL_TLS_CLIENTROOTCAS: "[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt]"
       ORDERER_CHANNELPARTICIPATION_ENABLED: "false"
       ORDERER_ADMIN_TLS_ENABLED: "false"
       ORDERER_OPERATIONS_LISTENADDRESS: 0.0.0.0:10443

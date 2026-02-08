@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const { pushData, pullData } = require('./fabricService.js');
 const express = require('express');
 const axios = require('axios');
@@ -6,31 +8,76 @@ const jwksRsa = require('jwks-rsa');
 const crypto = require('crypto');
 
 const app = express();
-const PORT = 3000;
-const J2_SERVICE_URL = 'http://backend-j2:8000';   // ← service Python
+const PORT = process.env.PORT;
+const J2_SERVICE_URL = process.env.J2_SERVICE_URL;   // service Python
+
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  host: process.env.DATABASE_HOST,
+  port: parseInt(process.env.DATABASE_PORT),
+  database: process.env.DATABASE_NAME,
+  user: process.env.DATABASE_USER,
+  password: process.env.DATABASE_PASSWORD,
+});
+
+async function initDatabase() {
+  try {
+    // await pool.query(`DROP TABLE IF EXISTS alertes;`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS alertes (
+        id              TEXT PRIMARY KEY,               -- on garde les UUID courts en TEXT
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        is_analysed     BOOLEAN NOT NULL DEFAULT FALSE,
+        ai_percentage   REAL,                             -- score IA (0-100 par ex)
+        alert_data      JSONB NOT NULL,                   -- toutes les autres infos ici
+        status          TEXT NOT NULL DEFAULT 'NEW'
+      );
+
+      -- Index utiles
+      CREATE INDEX IF NOT EXISTS idx_alertes_status     ON alertes(status);
+      CREATE INDEX IF NOT EXISTS idx_alertes_created_at ON alertes(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_alertes_ai_perc    ON alertes(ai_percentage);
+    `);
+
+    console.log("✅ Table 'alertes' prête");
+
+    // Petit check santé
+    const res = await pool.query(`SELECT 1`);
+    if (res.rowCount !== 1) throw new Error("Échec test connexion DB");
+
+    console.log("✅ DB Service Online");
+  } catch (err) {
+    console.error("Erreur initialisation DB :", err);
+    process.exit(1); // ou autre stratégie selon votre tolérance
+  }
+}
+
+// Lancement init DB au démarrage
+initDatabase().catch(err => {
+  console.error("Échec init DB au démarrage", err);
+  process.exit(1);
+});
 
 app.use(express.json());
 
 // ──────────────────────────────────────────────────────────────
-// Auth Keycloak (même configuration qu’avant)
+// Authentification Keycloak
 // ──────────────────────────────────────────────────────────────
 const checkJwt = jwt({
   secret: jwksRsa.expressJwtSecret({
     cache: true,
     rateLimit: true,
     jwksRequestsPerMinute: 5,
-    jwksUri: 'http://keycloak:8080/realms/trace-ops/protocol/openid-connect/certs'
+    jwksUri: process.env.KEYCLOAK_JWKS_URI
   }),
-  audience: 'account',
+  audience: process.env.KEYCLOAK_AUDIENCE,
   issuer: [
     'http://localhost:8080/realms/trace-ops',
-    'http://keycloak:8080/realms/trace-ops'
+    process.env.KEYCLOAK_ISSUER
   ],
   algorithms: ['RS256']
 });
-
-// Base de données en mémoire (remplace l’ancien alerts_db du Python)
-let alerts_db = [];
 
 // ──────────────────────────────────────────────────────────────
 // Health
@@ -42,19 +89,45 @@ app.get('/health', (_req, res) => {
 // ──────────────────────────────────────────────────────────────
 // GET /alerts
 // ──────────────────────────────────────────────────────────────
-app.get('/alerts', checkJwt, (req, res) => {
-    const userRoles = req.auth.realm_access?.roles || [];
+app.get('/alerts', checkJwt, async (req, res) => {
+  const userRoles = req.auth.realm_access?.roles || [];
 
-    if (!userRoles.includes('operateur') && !userRoles.includes('decideur')) {
-        return res.status(403).json({ error: "Rôle 'operateur' ou 'decideur' requis" });
-    }
-    res.json(alerts_db);
+  if (!userRoles.includes('operateur') && !userRoles.includes('decideur')) {
+    return res.status(403).json({ error: "Rôle 'operateur' ou 'decideur' requis" });
+  }
+
+  try {
+    const result = await pool.query(`
+      SELECT 
+        id,
+        created_at,
+        status,
+        ai_percentage,
+        alert_data
+      FROM alertes
+      ORDER BY created_at DESC
+      LIMIT 200
+    `);
+
+    const alerts = result.rows.map(row => ({
+      id: row.id,
+      ...row.alert_data,
+      status: row.status,
+      aiScore: row.ai_percentage,
+      created_at: row.created_at
+    }));
+
+    res.json(alerts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database error" });
+  }
 });
 
 // ──────────────────────────────────────────────────────────────
-// POST /alerts  (création d’alerte)
+// POST /alerts
 // ──────────────────────────────────────────────────────────────
-app.post('/alerts', checkJwt, (req, res) => {
+app.post('/alerts', checkJwt, async (req, res) => {
   const userRoles = req.auth.realm_access?.roles || [];
 
   if (!userRoles.includes('operateur') && !userRoles.includes('decideur')) {
@@ -63,25 +136,38 @@ app.post('/alerts', checkJwt, (req, res) => {
 
   const { type, zone, criticality } = req.body;
 
-  const new_alert = {
-    id: crypto.randomUUID().slice(0, 8),
+  const alertId = crypto.randomUUID().slice(0, 8);
+  const timestamp = new Date().toISOString();
+
+  const alertData = {
     type,
     zone,
-    timestamp: new Date().toISOString(),
+    timestamp,
     criticality,
-    status: "NEW",
-    aiScore: null,
     aiSummary: null,
-    decision: null,
-    txHash: null
+    decision: null
   };
 
-  alerts_db.push(new_alert);
-  res.status(201).json(new_alert);
+  try {
+    await pool.query(`
+      INSERT INTO alertes (id, alert_data, status, is_analysed)
+      VALUES ($1, $2, 'NEW', FALSE)
+    `, [alertId, alertData]);
+
+    res.status(201).json({
+      id: alertId,
+      ...alertData,
+      status: "NEW",
+      aiScore: null
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create alert" });
+  }
 });
 
 // ──────────────────────────────────────────────────────────────
-// POST /analyze/:alert_id  → appelle le service Python
+// POST /analyze/:alert_id
 // ──────────────────────────────────────────────────────────────
 app.post('/analyze/:alert_id', checkJwt, async (req, res) => {
   const userRoles = req.auth.realm_access?.roles || [];
@@ -90,83 +176,104 @@ app.post('/analyze/:alert_id', checkJwt, async (req, res) => {
     return res.status(403).json({ error: "Rôle 'analyste' requis" });
   }
 
-  const alert_id = req.params.alert_id;
-  const alert = alerts_db.find(a => a.id === alert_id);
-
-  if (!alert) {
-    return res.status(404).json({ error: "Alert not found" });
-  }
+  const { alert_id } = req.params;
 
   try {
-    // Appel du service Python (seulement pour l’IA)
+    const result = await pool.query(`
+      SELECT alert_data, status 
+      FROM alertes 
+      WHERE id = $1
+    `, [alert_id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Alert not found" });
+    }
+
+    const alert = result.rows[0];
+
+    // Appel service IA Python
     const { data } = await axios.post(`${J2_SERVICE_URL}/analyze`, {
-      zone: alert.zone
+      zone: alert.alert_data.zone
     });
 
-    // Mise à jour de l’alerte dans la DB JS
-    alert.aiScore = data.aiScore;
-    alert.aiSummary = data.aiSummary;
-    alert.status = "ANALYZED";
+    // ──────────────── Défenses ────────────────
+    const aiPercentage = Number(data.aiScore) || null;           // force number ou null
+    const aiSummary    = data.aiSummary != null ? String(data.aiSummary) : null;
 
-    res.json(alert);
-  } catch (error) {
-    console.error("Erreur analyse IA :", error.message);
+    // Log pour debug (à retirer en prod si tu veux)
+    console.log("Valeurs IA reçues →", { aiPercentage, aiSummary });
+
+    await pool.query(`
+      UPDATE alertes
+      SET 
+        is_analysed   = TRUE,
+        ai_percentage = $1,
+        alert_data    = alert_data || jsonb_build_object(
+          'aiSummary', 
+          $2::text
+        ),
+        status        = 'ANALYZED'
+      WHERE id = $3
+    `, [aiPercentage, aiSummary, alert_id]);
+
+    // Retour de l'alerte mise à jour
+    const updated = await pool.query(`
+      SELECT id, status, ai_percentage, alert_data
+      FROM alertes
+      WHERE id = $1
+    `, [alert_id]);
+
+    const row = updated.rows[0];
+
+    res.json({
+      id: row.id,
+      ...row.alert_data,
+      status: row.status,
+      aiScore: row.ai_percentage
+    });
+
+  } catch (err) {
+    console.error("Erreur analyse :", err.message);
     res.status(500).json({ error: "Failed to run AI analysis" });
   }
 });
 
 // ──────────────────────────────────────────────────────────────
-// POST /decision  (décision + écriture blockchain simulée)
+// POST /decision
 // ──────────────────────────────────────────────────────────────
 app.post('/decision', checkJwt, async (req, res) => {
-    const userRoles = req.auth.realm_access?.roles || [];
+  const userRoles = req.auth.realm_access?.roles || [];
 
-    if (!userRoles.includes('decideur')) {
-        return res.status(403).json({ error: "Rôle 'decideur' requis" });
-    }
+  if (!userRoles.includes('decideur')) {
+    return res.status(403).json({ error: "Rôle 'decideur' requis" });
+  }
 
-    const { alertId, decision } = req.body;
+  const { alertId, decision } = req.body;
 
-    const payloadStr = JSON.stringify(decision);
-    const hash = crypto.createHash('sha256').update(payloadStr).digest('hex');
+  const payloadStr = JSON.stringify(decision);
+  const hash = crypto.createHash('sha256').update(payloadStr).digest('hex');
 
-    try { 
-        // --- ÉCRITURE ---
-        console.log("Envoi de la décision...");
-        await pushData(alertId, decision, hash);
+  try {
+    console.log("Envoi décision vers blockchain...");
+    await pushData(alertId, decision, hash);
 
-        // --- LECTURE ---
-        console.log("Lecture immédiate...");
-        const record = await pullData(alertId);
-        
-        console.log("Record récupéré depuis la Blockchain :");
-        console.log(`- ID: ${record.id}`);
-        console.log(`- TxID: ${record.txId}`);
-        console.log(`- Payload récupéré:`, record.payload);
-        
-    } catch (error) {
-        console.error("Échec :", error.message);
-    }
-
-    // --- Il faudra prendre ce que return la DB pour être sûr des données
-    const alert = alerts_db.find(a => a.id === alertId);
-    if (!alert) {
-        return res.status(404).json({ error: "Alert not found" });
-    }
-
-    alert.decision = decision;
-    alert.txHash = hash;
-    alert.status = "DECIDED";
-    // ---
+    console.log("Lecture immédiate blockchain...");
+    const record = await pullData(alertId);
+    console.log("Record blockchain :", record);
 
     res.json({
-        status: "SUCCESS",
-        txHash: hash,
-        alertId: alert.id
+      status: "SUCCESS",
+      txHash: hash,
+      alertId
     });
+
+  } catch (err) {
+    console.error("Échec décision / blockchain :", err.message);
+    res.status(500).json({ error: "Failed to record decision" });
+  }
 });
 
-// Gestion des erreurs JWT
+// Gestion erreurs JWT
 app.use((err, _req, res, next) => {
   if (err.name === 'UnauthorizedError') {
     return res.status(401).json({ error: 'Invalid Token: ' + err.message });
