@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const { pushData, pullData } = require('./fabricService.js');
 const express = require('express');
 const axios = require('axios');
@@ -6,17 +8,17 @@ const jwksRsa = require('jwks-rsa');
 const crypto = require('crypto');
 
 const app = express();
-const PORT = 3000;
-const J2_SERVICE_URL = 'http://backend-j2:8000';   // service Python
+const PORT = process.env.PORT;
+const J2_SERVICE_URL = process.env.J2_SERVICE_URL;   // service Python
 
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  host: 'postgres',
-  port: 5432,
-  database: 'trace-ops-db',
-  user: 'traceops',
-  password: 'admin',
+  host: process.env.DATABASE_HOST,
+  port: parseInt(process.env.DATABASE_PORT),
+  database: process.env.DATABASE_NAME,
+  user: process.env.DATABASE_USER,
+  password: process.env.DATABASE_PASSWORD,
 });
 
 async function initDatabase() {
@@ -67,12 +69,12 @@ const checkJwt = jwt({
     cache: true,
     rateLimit: true,
     jwksRequestsPerMinute: 5,
-    jwksUri: 'http://keycloak:8080/realms/trace-ops/protocol/openid-connect/certs'
+    jwksUri: process.env.KEYCLOAK_JWKS_URI
   }),
-  audience: 'account',
+  audience: process.env.KEYCLOAK_AUDIENCE,
   issuer: [
     'http://localhost:8080/realms/trace-ops',
-    'http://keycloak:8080/realms/trace-ops'
+    process.env.KEYCLOAK_ISSUER
   ],
   algorithms: ['RS256']
 });

@@ -22,10 +22,10 @@ sudo ./zone2-ledger/scripts/generate-connection-profiles.sh
 
 zone2-ledger/config/connection-profiles/zone1-write-connection.json
 ici :
-zone1/services/backend-em/zone1-write-connection.json
+zone1/connection-profiles/zone1-write-connection.json
 
 ```bash
-cp zone2-ledger/config/connection-profiles/zone1-write-connection.json zone1/services/backend-em/zone1-write-connection.json
+cp zone2-ledger/config/connection-profiles/zone1-write-connection.json zone1/connection-profiles/zone1-write-connection.json
 ```
 
 ### Runnez les tests au cas où:
@@ -63,7 +63,7 @@ cp zone2-ledger/config/connection-profiles/zone1-write-connection.json zone1/ser
 [...]
 ```
 
-### Pour le moment, il faut récupérer les fichiers cert.pem et \*\_sk à la main, et les mettre dans le dossier zone1/services/backend-em/wallet, voici comment faire :
+### Pour le moment, il faut récupérer les fichiers cert.pem et \*\_sk à la main, et les mettre dans le dossier zone1/wallet/, voici comment faire :
 
 - le fichier cert.pem se situe ici:
   zone2-ledger/crypto/organizations/peerOrganizations/orgj2.traceops.local/users/Admin@orgj2.traceops.local/msp/signcerts/cert.pem

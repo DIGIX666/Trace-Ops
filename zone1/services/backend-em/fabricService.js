@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const grpc = require('@grpc/grpc-js');
 const { connect, signers } = require('@hyperledger/fabric-gateway');
 const fs = require('fs').promises;
@@ -5,9 +7,9 @@ const path = require('path');
 const crypto = require('crypto');
 
 // --- CONFIGURATION ---
-const MSP_ID = 'OrgEMMSP';
-const CHANNEL_NAME = 'traceops';
-const CHAINCODE_NAME = 'decision';
+const MSP_ID = process.env.FABRIC_MSP_ID;
+const CHANNEL_NAME = process.env.FABRIC_CHANNEL_NAME;
+const CHAINCODE_NAME = process.env.FABRIC_CHAINCODE_NAME;
 
 // --- FONCTION UTILITAIRE MODIFIÉE ---
 async function getPrivateKeyPath(keystorePath) {
@@ -18,10 +20,10 @@ async function getPrivateKeyPath(keystorePath) {
 }
 
 async function createGatewayConnection() {
-    const ccpPath = path.resolve(__dirname, 'zone1-write-connection.json');
+    const ccpPath = path.resolve(__dirname, process.env.FABRIC_CCP_PATH);
     const ccp = JSON.parse(await fs.readFile(ccpPath, 'utf8'));
 
-    const peerName = 'peer0.orgem.traceops.local';
+    const peerName = process.env.FABRIC_PEER_NAME;
     let peerURL = ccp.peers[peerName].url.replace('grpcs://', '');
     
     // Correction Docker (comme tu as fait)
@@ -30,10 +32,10 @@ async function createGatewayConnection() {
     
     const tlsCert = Buffer.from(ccp.peers[peerName].tlsCACerts.pem);
 
-    const certPath = path.resolve(__dirname, 'wallet/cert.pem');
+    const certPath = path.resolve(__dirname, process.env.FABRIC_CERT_PATH);
     const credentials = await fs.readFile(certPath); // Buffer du certificat client
 
-    const keystorePath = path.resolve(__dirname, 'wallet/');
+    const keystorePath = path.resolve(__dirname, process.env.FABRIC_WALLET_PATH);
     const keyPath = await getPrivateKeyPath(keystorePath);
     const privateKeyBuffer = await fs.readFile(keyPath); // Buffer de la clé (pour mTLS)
     

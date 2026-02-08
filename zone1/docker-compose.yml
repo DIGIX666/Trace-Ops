@@ -72,6 +72,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ./wallet:/app/wallet:ro
+      - ./connection-profiles:/app/connection-profiles:ro
 
   keycloak:
     extends:
