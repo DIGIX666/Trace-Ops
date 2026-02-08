@@ -69,6 +69,9 @@ services:
     environment:
       - GRPC_TRACE=transport_security,tss
       - GRPC_VERBOSITY=DEBUG
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   keycloak:
     extends:
@@ -93,6 +96,24 @@ services:
     networks:
       - zone1-network
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: traceops-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: trace-ops-db
+      POSTGRES_USER: traceops
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - zone1-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U traceops -d trace-ops-db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 networks:
   zone1-network:
     driver: bridge
@@ -102,3 +123,4 @@ networks:
 
 volumes:
   keycloak_db_data:
+  postgres_data:

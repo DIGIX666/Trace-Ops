@@ -297,23 +297,10 @@ services:
     depends_on:
       - couchdb0.orgem.traceops.local
       - ca.traceops.local
-  postgres:
-    image: postgres:16-alpine
-    container_name: traceops-postgres
-    restart: always
-    environment:
-      POSTGRES_DB: trace-ops-zone2-db
-      POSTGRES_USER: traceops
-      POSTGRES_PASSWORD: admin
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - traceops
 
 networks:
   traceops:
     name: traceops
-    driver: bridge
 
 volumes:
   # Persist ledger and CouchDB data across container restarts
@@ -323,4 +310,3 @@ volumes:
   peer0-em-data:
   couchdb0-j2-data:
   couchdb0-em-data:
-  postgres_data:

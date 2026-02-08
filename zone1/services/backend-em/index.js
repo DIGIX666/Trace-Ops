@@ -14,7 +14,7 @@ const { Pool } = require('pg');
 const pool = new Pool({
   host: 'postgres',
   port: 5432,
-  database: 'trace-ops-zone2-db',
+  database: 'trace-ops-db',
   user: 'traceops',
   password: 'admin',
 });
