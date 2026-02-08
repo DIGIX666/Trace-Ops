@@ -10,10 +10,12 @@ TOOLS_IMAGE=${TOOLS_IMAGE:-hyperledger/fabric-tools:2.5}
 CLEAN_START=${CLEAN_START:-true}
 
 compose() {
+  # Keep compose file location centralized for every compose call
   docker compose -f "${COMPOSE_FILE}" "$@"
 }
 
 wait_for_ca() {
+  # CA may take a few seconds; poll cainfo before running enroll/register
   local retries=40
   local delay=2
   local i
@@ -30,11 +32,13 @@ wait_for_ca() {
 }
 
 extract_ca_cert() {
+  # Export CA certificate to the host path consumed by follow-up scripts
   mkdir -p "${ROOT_DIR}/crypto/ca"
   docker cp "ca.traceops.local:/etc/hyperledger/fabric-ca-server/ca-cert.pem" "${ROOT_DIR}/crypto/ca/ca-cert.pem"
 }
 
 run_peer_cli() {
+  # Execute peer CLI as a tools container with org-specific identity and TLS
   local org=$1
   local command=$2
 
@@ -86,6 +90,7 @@ run_peer_cli() {
 echo "[1/6] Starting CA and CouchDB services"
 if [ "${CLEAN_START}" = "true" ]; then
   echo "Cleaning previous crypto artifacts for a fresh bootstrap"
+  # Full cleanup keeps MSP/certs/channel artifacts aligned with generated config
   compose down -v >/dev/null 2>&1 || true
   rm -rf "${ROOT_DIR}/crypto/ca" "${ROOT_DIR}/crypto/organizations" "${ROOT_DIR}/crypto/channel-artifacts" "${ROOT_DIR}/crypto/fabric-ca-client"
 fi
@@ -111,6 +116,7 @@ CHANNEL_TX="/crypto/channel-artifacts/${CHANNEL_NAME}.tx"
 CHANNEL_BLOCK="/crypto/channel-artifacts/${CHANNEL_NAME}.block"
 
 echo "[6/6] Creating channel, joining peers, and setting anchor peers"
+# Channel create uses OrgJ2 admin; both org peers then join and set anchors
 run_peer_cli orgj2 "peer channel create -o orderer0.traceops.local:7050 -c ${CHANNEL_NAME} -f ${CHANNEL_TX} --outputBlock ${CHANNEL_BLOCK} --tls --cafile ${ORDERER_CA} --clientauth --certfile /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.crt --keyfile /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.key"
 
 run_peer_cli orgj2 "peer channel join -b ${CHANNEL_BLOCK}"

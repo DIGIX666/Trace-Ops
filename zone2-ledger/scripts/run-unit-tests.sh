@@ -3,6 +3,8 @@ set -euo pipefail
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
+# Keep script tests lightweight so they can run before each commit
+
 echo "[1/2] Running chaincode unit tests"
 (cd "${ROOT_DIR}/chaincode/decision" && go test ./...)
 

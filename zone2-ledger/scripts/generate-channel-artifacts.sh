@@ -35,6 +35,7 @@ fi
 mkdir -p "${ARTIFACTS_DIR}"
 
 run_configtxgen() {
+  # Use configtxgen from tools image to keep host setup minimal and reproducible
   docker run --rm \
     -v "${CONFIG_DIR}:${CONFIGTX_PATH_IN_CONTAINER}" \
     -v "${CRYPTO_DIR}:${CRYPTO_PATH_IN_CONTAINER}" \
@@ -43,11 +44,13 @@ run_configtxgen() {
     configtxgen "$@"
 }
 
+# System channel genesis for orderer bootstrap
 run_configtxgen \
   -profile "${GENESIS_PROFILE}" \
   -channelID "system-channel" \
   -outputBlock "${ARTIFACTS_PATH_IN_CONTAINER}/genesis.block"
 
+# Application channel create transaction (traceops by default)
 run_configtxgen \
   -profile "${CHANNEL_PROFILE}" \
   -channelID "${CHANNEL_NAME}" \

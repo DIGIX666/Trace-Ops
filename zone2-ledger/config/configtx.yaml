@@ -1,4 +1,5 @@
 Organizations:
+  # Single orderer org + two peer orgs for governance endorsement demo
   - &OrdererOrg
     Name: OrdererOrg
     ID: OrdererMSP
@@ -87,6 +88,7 @@ Application: &ApplicationDefaults
 
 Orderer: &OrdererDefaults
   OrdererType: etcdraft
+  # Client-facing orderer endpoints
   Addresses:
     - orderer0.traceops.local:7050
     - orderer1.traceops.local:8050
@@ -96,6 +98,7 @@ Orderer: &OrdererDefaults
     AbsoluteMaxBytes: 99 MB
     PreferredMaxBytes: 512 KB
   EtcdRaft:
+    # Cluster ports used for Raft communication between orderers
     Consenters:
       - Host: orderer0.traceops.local
         Port: 7053
@@ -137,6 +140,7 @@ Channel: &ChannelDefaults
     <<: *ChannelCapabilities
 
 Profiles:
+  # Genesis profile initializes system channel and consortium
   TwoOrgsOrdererGenesis:
     <<: *ChannelDefaults
     Orderer:
@@ -150,6 +154,7 @@ Profiles:
           - *OrgEM
 
   TwoOrgsChannel:
+    # Application channel profile used to create "traceops"
     <<: *ChannelDefaults
     Consortium: TraceOpsConsortium
     Application:
