@@ -1,4 +1,21 @@
 services:
+  # --- Service Init Certificats TLS (auto-génération nginx) ---
+  cert-init:
+    image: alpine:3.20
+    container_name: trace-ops-cert-init
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        apk add --no-cache openssl >/dev/null
+        mkdir -p /certs
+        if [ ! -f /certs/self-signed.crt ] || [ ! -f /certs/self-signed.key ]; then
+          openssl req -x509 -nodes -newkey rsa:2048 -days 365 -subj '/C=FR/ST=NA/L=NA/O=TraceOps/CN=localhost' -keyout /certs/self-signed.key -out /certs/self-signed.crt
+        fi
+    volumes:
+      - ./nginx/certs:/certs
+
   # --- Service Proxy Principal (Gère le HTTPS /443) ---
   reverse-proxy:
     image: nginx:alpine
@@ -11,9 +28,14 @@ services:
     networks:
       - zone1-network
     depends_on:
-      - frontend-vue
-      - backend-j2
-      - backend-em
+      cert-init:
+        condition: service_completed_successfully
+      frontend-vue:
+        condition: service_started
+      backend-j2:
+        condition: service_started
+      backend-em:
+        condition: service_started
 
   # --- Service Frontend Vue.js ---
   frontend-vue:

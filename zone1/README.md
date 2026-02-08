@@ -1,1 +1,1 @@
-- Ne pas oublier d'ajouter les certs dans zone1/nginx/certs/
+- Les certificats TLS nginx (`self-signed.crt` et `self-signed.key`) sont générés automatiquement au démarrage via le service `cert-init` si absents dans `zone1/nginx/certs/`.

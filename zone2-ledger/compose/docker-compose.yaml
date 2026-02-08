@@ -1,3 +1,5 @@
+name: zone2
+
 services:
   ca.traceops.local:
     image: hyperledger/fabric-ca:1.5.16
