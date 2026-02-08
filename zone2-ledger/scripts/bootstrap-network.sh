@@ -76,6 +76,7 @@ run_peer_cli() {
     -e CORE_PEER_ADDRESS="${peer_address}" \
     -e CORE_PEER_MSPCONFIGPATH="${admin_msp}" \
     -e CORE_PEER_TLS_ROOTCERT_FILE="${tls_root}" \
+    -e CORE_PEER_TLS_CLIENTAUTHREQUIRED=true \
     -e CORE_PEER_TLS_CLIENTCERT_FILE="${tls_cert}" \
     -e CORE_PEER_TLS_CLIENTKEY_FILE="${tls_key}" \
     "${TOOLS_IMAGE}" \

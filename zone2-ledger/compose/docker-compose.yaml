@@ -39,6 +39,8 @@ services:
       FABRIC_CFG_PATH: /etc/hyperledger/fabric
       ORDERER_GENERAL_LISTENADDRESS: 0.0.0.0
       ORDERER_GENERAL_LISTENPORT: 7050
+      ORDERER_GENERAL_BOOTSTRAPMETHOD: file
+      ORDERER_GENERAL_BOOTSTRAPFILE: /etc/hyperledger/fabric/genesisblock
       ORDERER_GENERAL_LOCALMSPID: OrdererMSP
       ORDERER_GENERAL_LOCALMSPDIR: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/msp
       ORDERER_GENERAL_TLS_ENABLED: "true"
@@ -47,7 +49,7 @@ services:
       ORDERER_GENERAL_TLS_ROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt]'
       ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED: "true"
       ORDERER_GENERAL_TLS_CLIENTROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt]'
-      ORDERER_CHANNELPARTICIPATION_ENABLED: "true"
+      ORDERER_CHANNELPARTICIPATION_ENABLED: "false"
       ORDERER_ADMIN_TLS_ENABLED: "false"
       ORDERER_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
     working_dir: /root
@@ -67,7 +69,7 @@ services:
         max-size: "10m"
         max-file: "3"
     volumes:
-      - ../config/orderer.yaml:/etc/hyperledger/fabric/orderer.yaml
+      - ../config/orderer0.yaml:/etc/hyperledger/fabric/orderer.yaml
       - ../crypto/channel-artifacts/genesis.block:/etc/hyperledger/fabric/genesisblock
       - ../crypto:/crypto
       - orderer0-data:/var/hyperledger/production/orderer
@@ -84,6 +86,8 @@ services:
       FABRIC_CFG_PATH: /etc/hyperledger/fabric
       ORDERER_GENERAL_LISTENADDRESS: 0.0.0.0
       ORDERER_GENERAL_LISTENPORT: 8050
+      ORDERER_GENERAL_BOOTSTRAPMETHOD: file
+      ORDERER_GENERAL_BOOTSTRAPFILE: /etc/hyperledger/fabric/genesisblock
       ORDERER_GENERAL_LOCALMSPID: OrdererMSP
       ORDERER_GENERAL_LOCALMSPDIR: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/msp
       ORDERER_GENERAL_TLS_ENABLED: "true"
@@ -92,7 +96,7 @@ services:
       ORDERER_GENERAL_TLS_ROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt]'
       ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED: "true"
       ORDERER_GENERAL_TLS_CLIENTROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt]'
-      ORDERER_CHANNELPARTICIPATION_ENABLED: "true"
+      ORDERER_CHANNELPARTICIPATION_ENABLED: "false"
       ORDERER_ADMIN_TLS_ENABLED: "false"
       ORDERER_OPERATIONS_LISTENADDRESS: 0.0.0.0:10443
     working_dir: /root
@@ -112,7 +116,7 @@ services:
         max-size: "10m"
         max-file: "3"
     volumes:
-      - ../config/orderer.yaml:/etc/hyperledger/fabric/orderer.yaml
+      - ../config/orderer1.yaml:/etc/hyperledger/fabric/orderer.yaml
       - ../crypto/channel-artifacts/genesis.block:/etc/hyperledger/fabric/genesisblock
       - ../crypto:/crypto
       - orderer1-data:/var/hyperledger/production/orderer
@@ -190,6 +194,12 @@ services:
       CORE_PEER_TLS_CERT_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.crt
       CORE_PEER_TLS_KEY_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.key
       CORE_PEER_TLS_ROOTCERT_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/ca.crt
+      CORE_PEER_TLS_CLIENTAUTHREQUIRED: "true"
+      CORE_PEER_TLS_CLIENTROOTCAS_FILES: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/ca.crt
+      CORE_PEER_TLS_CLIENTCERT_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.crt
+      CORE_PEER_TLS_CLIENTKEY_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.key
+      CORE_VM_ENDPOINT: unix:///var/run/docker.sock
+      CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: traceops
       CORE_LEDGER_STATE_STATEDATABASE: CouchDB
       CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS: couchdb0.orgj2.traceops.local:5984
       CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME: admin
@@ -214,6 +224,7 @@ services:
         max-file: "3"
     volumes:
       - ../crypto:/crypto
+      - /var/run/docker.sock:/var/run/docker.sock
       - peer0-j2-data:/var/hyperledger/production
     networks:
       - traceops
@@ -240,6 +251,12 @@ services:
       CORE_PEER_TLS_CERT_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.crt
       CORE_PEER_TLS_KEY_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.key
       CORE_PEER_TLS_ROOTCERT_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/ca.crt
+      CORE_PEER_TLS_CLIENTAUTHREQUIRED: "true"
+      CORE_PEER_TLS_CLIENTROOTCAS_FILES: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/ca.crt
+      CORE_PEER_TLS_CLIENTCERT_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.crt
+      CORE_PEER_TLS_CLIENTKEY_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.key
+      CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: traceops
+      CORE_VM_ENDPOINT: unix:///var/run/docker.sock
       CORE_LEDGER_STATE_STATEDATABASE: CouchDB
       CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS: couchdb0.orgem.traceops.local:5984
       CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME: admin
@@ -264,6 +281,7 @@ services:
         max-file: "3"
     volumes:
       - ../crypto:/crypto
+      - /var/run/docker.sock:/var/run/docker.sock
       - peer0-em-data:/var/hyperledger/production
     networks:
       - traceops

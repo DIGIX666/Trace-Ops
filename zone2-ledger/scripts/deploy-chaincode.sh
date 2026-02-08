@@ -11,11 +11,12 @@ CHAINCODE_SEQUENCE=${CHAINCODE_SEQUENCE:-1}
 CHAINCODE_SRC=${CHAINCODE_SRC:-/workspace/chaincode/decision}
 CHAINCODE_PACKAGE=${CHAINCODE_PACKAGE:-/workspace/crypto/channel-artifacts/${CHAINCODE_LABEL}.tar.gz}
 CHAINCODE_LANG=${CHAINCODE_LANG:-golang}
-ENDORSEMENT_POLICY=${ENDORSEMENT_POLICY:-AND('OrgJ2MSP.member','OrgEMMSP.member')}
+ENDORSEMENT_POLICY=${ENDORSEMENT_POLICY:-"AND('OrgJ2MSP.member','OrgEMMSP.member')"}
 
 NETWORK_NAME=${NETWORK_NAME:-traceops}
 TOOLS_IMAGE=${TOOLS_IMAGE:-hyperledger/fabric-tools:2.5}
 RUN_SMOKE_TEST=${RUN_SMOKE_TEST:-true}
+WAIT_FOR_EVENT_TIMEOUT=${WAIT_FOR_EVENT_TIMEOUT:-120s}
 
 ORDERER_ADDR=${ORDERER_ADDR:-orderer0.traceops.local:7050}
 ORDERER_CA=/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt
@@ -68,6 +69,7 @@ run_peer_cli() {
     -e CORE_PEER_ADDRESS="${peer_address}" \
     -e CORE_PEER_MSPCONFIGPATH="${admin_msp}" \
     -e CORE_PEER_TLS_ROOTCERT_FILE="${tls_root}" \
+    -e CORE_PEER_TLS_CLIENTAUTHREQUIRED=true \
     -e CORE_PEER_TLS_CLIENTCERT_FILE="${tls_cert}" \
     -e CORE_PEER_TLS_CLIENTKEY_FILE="${tls_key}" \
     "${TOOLS_IMAGE}" \
@@ -122,36 +124,47 @@ fi
 
 echo "Resolved package ID: ${package_id}"
 
-already_committed=$(run_peer_cli orgj2 "peer lifecycle chaincode querycommitted -C ${CHANNEL_NAME} --name ${CHAINCODE_NAME} || true")
+set +e
+already_committed=$(run_peer_cli orgj2 "peer lifecycle chaincode querycommitted -C ${CHANNEL_NAME} --name ${CHAINCODE_NAME}" 2>&1)
+already_committed_rc=$?
+set -e
+
+if [ "${already_committed_rc}" -ne 0 ] && ! printf '%s\n' "${already_committed}" | grep -q "404 - namespace ${CHAINCODE_NAME} is not defined"; then
+  printf '%s\n' "${already_committed}" >&2
+  exit "${already_committed_rc}"
+fi
+
 if printf '%s\n' "${already_committed}" | grep -q "Version: ${CHAINCODE_VERSION}, Sequence: ${CHAINCODE_SEQUENCE}"; then
   echo "Chaincode ${CHAINCODE_NAME} already committed at version ${CHAINCODE_VERSION} sequence ${CHAINCODE_SEQUENCE}."
   exit 0
 fi
 
 echo "[3/7] Approving definition for OrgJ2"
-run_peer_cli orgj2 "peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDR} --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --package-id ${package_id} --sequence ${CHAINCODE_SEQUENCE} --signature-policy \"${ENDORSEMENT_POLICY}\" --tls --cafile ${ORDERER_CA} --clientauth --certfile /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.crt --keyfile /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.key"
+run_peer_cli orgj2 "peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDR} --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --package-id ${package_id} --sequence ${CHAINCODE_SEQUENCE} --signature-policy \"${ENDORSEMENT_POLICY}\" --tls --cafile ${ORDERER_CA} --clientauth --certfile /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.crt --keyfile /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.key --waitForEventTimeout ${WAIT_FOR_EVENT_TIMEOUT}"
 
 echo "[4/7] Approving definition for OrgEM"
-run_peer_cli orgem "peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDR} --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --package-id ${package_id} --sequence ${CHAINCODE_SEQUENCE} --signature-policy \"${ENDORSEMENT_POLICY}\" --tls --cafile ${ORDERER_CA} --clientauth --certfile /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.crt --keyfile /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.key"
+run_peer_cli orgem "peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDR} --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --package-id ${package_id} --sequence ${CHAINCODE_SEQUENCE} --signature-policy \"${ENDORSEMENT_POLICY}\" --tls --cafile ${ORDERER_CA} --clientauth --certfile /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.crt --keyfile /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.key --waitForEventTimeout ${WAIT_FOR_EVENT_TIMEOUT}"
 
 echo "[5/7] Verifying commit readiness"
 run_peer_cli orgj2 "peer lifecycle chaincode checkcommitreadiness -C ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --sequence ${CHAINCODE_SEQUENCE} --signature-policy \"${ENDORSEMENT_POLICY}\" --output json"
 
 echo "[6/7] Committing chaincode definition"
-run_peer_cli orgj2 "peer lifecycle chaincode commit -o ${ORDERER_ADDR} --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --sequence ${CHAINCODE_SEQUENCE} --signature-policy \"${ENDORSEMENT_POLICY}\" --tls --cafile ${ORDERER_CA} --clientauth --certfile /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.crt --keyfile /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.key --peerAddresses ${PEER_J2_ADDR} --tlsRootCertFiles ${PEER_J2_TLS} --peerAddresses ${PEER_EM_ADDR} --tlsRootCertFiles ${PEER_EM_TLS}"
+run_peer_cli orgj2 "peer lifecycle chaincode commit -o ${ORDERER_ADDR} --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --sequence ${CHAINCODE_SEQUENCE} --signature-policy \"${ENDORSEMENT_POLICY}\" --tls --cafile ${ORDERER_CA} --clientauth --certfile /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.crt --keyfile /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.key --peerAddresses ${PEER_J2_ADDR} --tlsRootCertFiles ${PEER_J2_TLS} --peerAddresses ${PEER_EM_ADDR} --tlsRootCertFiles ${PEER_EM_TLS} --waitForEventTimeout ${WAIT_FOR_EVENT_TIMEOUT}"
 
 echo "[7/7] Querying committed definition"
 run_peer_cli orgj2 "peer lifecycle chaincode querycommitted -C ${CHANNEL_NAME} --name ${CHAINCODE_NAME}"
 
 if [ "${RUN_SMOKE_TEST}" = "true" ]; then
   echo "Running smoke test invoke/query"
+  smoke_id="smoke-$(date +%s)"
   payload='{"actor":"zone1","decision":"APPROVED","reason":"smoke-test"}'
   app_hash=$(python3 -c 'import hashlib, json; payload={"actor":"zone1","decision":"APPROVED","reason":"smoke-test"}; canon=json.dumps(payload, separators=(",", ":"), sort_keys=True); print(hashlib.sha256(canon.encode()).hexdigest())')
+  payload_escaped=$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "${payload}")
 
-  run_peer_cli orgj2 "peer chaincode invoke -o ${ORDERER_ADDR} --tls --cafile ${ORDERER_CA} --clientauth --certfile /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.crt --keyfile /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.key -C ${CHANNEL_NAME} -n ${CHAINCODE_NAME} --peerAddresses ${PEER_J2_ADDR} --tlsRootCertFiles ${PEER_J2_TLS} --peerAddresses ${PEER_EM_ADDR} --tlsRootCertFiles ${PEER_EM_TLS} -c '{\"Args\":[\"SubmitDecision\",\"smoke-001\",\"${payload}\",\"${app_hash}\"]}'"
+  run_peer_cli orgj2 "peer chaincode invoke -o ${ORDERER_ADDR} --tls --cafile ${ORDERER_CA} --clientauth --certfile /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.crt --keyfile /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.key -C ${CHANNEL_NAME} -n ${CHAINCODE_NAME} --peerAddresses ${PEER_J2_ADDR} --tlsRootCertFiles ${PEER_J2_TLS} --peerAddresses ${PEER_EM_ADDR} --tlsRootCertFiles ${PEER_EM_TLS} -c '{\"Args\":[\"SubmitDecision\",\"${smoke_id}\",${payload_escaped},\"${app_hash}\"]}'"
 
   sleep 3
-  run_peer_cli orgj2 "peer chaincode query -C ${CHANNEL_NAME} -n ${CHAINCODE_NAME} -c '{\"Args\":[\"QueryDecision\",\"smoke-001\"]}'"
+  run_peer_cli orgj2 "peer chaincode query -C ${CHANNEL_NAME} -n ${CHAINCODE_NAME} -c '{\"Args\":[\"QueryDecision\",\"${smoke_id}\"]}'"
 fi
 
 echo "Chaincode deployment completed for '${CHAINCODE_NAME}' on channel '${CHANNEL_NAME}'."

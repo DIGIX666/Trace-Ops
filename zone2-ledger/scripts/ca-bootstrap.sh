@@ -106,6 +106,16 @@ setup_org_tls_ca() {
   cp "${tls_source_dir}/tlscacerts/${ca_file}" "${org_root}/msp/tlscacerts/ca.crt"
 }
 
+setup_node_tls_ca() {
+  local node_msp_dir=$1
+  local node_tls_dir=$2
+  local ca_file
+
+  ca_file=$(ls "${node_tls_dir}/tlscacerts" | head -n 1)
+  mkdir -p "${node_msp_dir}/tlscacerts"
+  cp "${node_tls_dir}/tlscacerts/${ca_file}" "${node_msp_dir}/tlscacerts/ca.crt"
+}
+
 create_org_msp() {
   local org=$1
   local org_domain="${org}.${DOMAIN}"
@@ -156,6 +166,7 @@ EOF
     --mspdir "${org_root_in_container}/peers/${peer}/tls"
 
   setup_tls_files "${org_root}/peers/${peer}/tls"
+  setup_node_tls_ca "${org_root}/peers/${peer}/msp" "${org_root}/peers/${peer}/tls"
 
   mkdir -p "${org_root}/users/Admin@${org_domain}/msp"
   run_ca_client "/crypto/organizations/peerOrganizations/${org_domain}" enroll -u "${CA_SCHEME}://${org}admin:${org}adminpw@${CA_HOST}:${CA_PORT}" \
@@ -222,6 +233,7 @@ EOF
       --mspdir "${orderer_dir_in_container}/tls"
 
     setup_tls_files "${orderer_dir}/tls"
+    setup_node_tls_ca "${orderer_dir}/msp" "${orderer_dir}/tls"
   }
 
   create_orderer "${ORDERER0}"
