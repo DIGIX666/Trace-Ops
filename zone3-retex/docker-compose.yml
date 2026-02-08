@@ -1,0 +1,43 @@
+version: "3.7"
+
+services:
+  # --- Reverse Proxy / Gateway ---
+  nginx-zone3:
+    image: nginx:stable-alpine
+    container_name: zone3-nginx
+    ports:
+      - "8083:80"
+      # - "443:443" # A décommenter quand les certs seront là (Step 07)
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - traceops
+    depends_on:
+      - backend-timeline
+      - frontend-retex
+
+  # --- Timeline Service (Node.js) ---
+  backend-timeline:
+    build: ./services/backend-timeline
+    container_name: zone3-backend
+    environment:
+      - DISCOVERY_AS_LOCALHOST=false
+    volumes:
+      # Montage nécessaire pour lire les certificats crypto de la Zone 2
+      # Adaptez le chemin relatif selon votre structure réelle
+      - ../zone2-ledger/config/crypto-config:/app/crypto-config
+      - ./connection-profiles:/app/connection-profiles
+    networks:
+      - traceops
+
+  # --- RETEX UI (Vue.js) ---
+  frontend-retex:
+    build: ./services/frontend-retex
+    container_name: zone3-frontend
+    networks:
+      - traceops
+
+networks:
+  traceops:
+    external: true
+    name: fabric_test
