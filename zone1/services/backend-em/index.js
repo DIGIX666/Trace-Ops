@@ -174,6 +174,45 @@ app.use((err, _req, res, next) => {
   next(err);
 });
 
+const { Pool } = require('pg');
+const pool = new Pool({
+  host: 'postgres',
+  port: 5432,
+  database: 'trace-ops-zone2-db',
+  user: 'traceops',
+  password: 'admin'
+});
+
+async function databaseHealthCheck() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS alertes (
+        id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        is_analysed BOOLEAN NOT NULL
+      )
+    `);
+
+    const res = await pool.query(`
+      SELECT tablename
+      FROM pg_tables
+      WHERE schemaname = 'public'
+    `);
+
+    if (res.rows.length !== 1 || res.rows[0].tablename !== "alertes") {
+      console.log("tablenames : ", row.tablename);
+      throw new Error("Error in table");
+    }
+
+    console.log("✅ DB Service Online")
+  } catch (error) {
+    console.error('Erreur DB:', error.message);
+  } finally {
+    await pool.end();
+  }
+}
+
+databaseHealthCheck();
+
 app.listen(PORT, () => {
   console.log(`✅ EM Service running on port ${PORT}`);
 });

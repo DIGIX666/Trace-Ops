@@ -50,9 +50,9 @@ services:
       ORDERER_GENERAL_TLS_ENABLED: "true"
       ORDERER_GENERAL_TLS_PRIVATEKEY: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.key
       ORDERER_GENERAL_TLS_CERTIFICATE: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/server.crt
-      ORDERER_GENERAL_TLS_ROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt]'
+      ORDERER_GENERAL_TLS_ROOTCAS: "[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt]"
       ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED: "true"
-      ORDERER_GENERAL_TLS_CLIENTROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt]'
+      ORDERER_GENERAL_TLS_CLIENTROOTCAS: "[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt]"
       ORDERER_CHANNELPARTICIPATION_ENABLED: "false"
       ORDERER_ADMIN_TLS_ENABLED: "false"
       ORDERER_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
@@ -98,9 +98,9 @@ services:
       ORDERER_GENERAL_TLS_ENABLED: "true"
       ORDERER_GENERAL_TLS_PRIVATEKEY: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/server.key
       ORDERER_GENERAL_TLS_CERTIFICATE: /crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/server.crt
-      ORDERER_GENERAL_TLS_ROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt]'
+      ORDERER_GENERAL_TLS_ROOTCAS: "[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt]"
       ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED: "true"
-      ORDERER_GENERAL_TLS_CLIENTROOTCAS: '[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt]'
+      ORDERER_GENERAL_TLS_CLIENTROOTCAS: "[/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt]"
       ORDERER_CHANNELPARTICIPATION_ENABLED: "false"
       ORDERER_ADMIN_TLS_ENABLED: "false"
       ORDERER_OPERATIONS_LISTENADDRESS: 0.0.0.0:10443
@@ -297,10 +297,23 @@ services:
     depends_on:
       - couchdb0.orgem.traceops.local
       - ca.traceops.local
+  postgres:
+    image: postgres:16-alpine
+    container_name: traceops-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: trace-ops-zone2-db
+      POSTGRES_USER: traceops
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - traceops
 
 networks:
   traceops:
     name: traceops
+    driver: bridge
 
 volumes:
   # Persist ledger and CouchDB data across container restarts
@@ -310,3 +323,4 @@ volumes:
   peer0-em-data:
   couchdb0-j2-data:
   couchdb0-em-data:
+  postgres_data:

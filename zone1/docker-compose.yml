@@ -60,7 +60,7 @@ services:
     container_name: trace-ops-em
     networks:
       - zone1-network
-      - fabric-network
+      - traceops
     extra_hosts:
       - "peer0.orgem.traceops.local:host-gateway"
       - "peer0.orgj2.traceops.local:host-gateway"
@@ -96,8 +96,7 @@ services:
 networks:
   zone1-network:
     driver: bridge
-  # On référence le réseau défini dans la Zone 2
-  fabric-network:
+  traceops:
     external: true
     name: traceops
 
