@@ -3,6 +3,8 @@ set -euo pipefail
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 
+# Preflight intentionally checks structure + syntax only (no network side effects)
+
 PASS_COUNT=0
 FAIL_COUNT=0
 

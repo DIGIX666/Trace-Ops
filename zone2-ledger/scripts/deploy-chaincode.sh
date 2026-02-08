@@ -60,6 +60,7 @@ run_peer_cli() {
       ;;
   esac
 
+  # Run peer CLI in a disposable tools container with org-specific identity
   docker run --rm \
     --network "${NETWORK_NAME}" \
     -v "${ROOT_DIR}:/workspace" \
@@ -83,6 +84,7 @@ if [ ! -d "${ROOT_DIR}/crypto/organizations" ]; then
 fi
 
 echo "[1/7] Packaging chaincode ${CHAINCODE_NAME}"
+# Package is generated from current source and label; reruns may produce new package IDs
 run_peer_cli orgj2 "peer lifecycle chaincode package ${CHAINCODE_PACKAGE} --path ${CHAINCODE_SRC} --lang ${CHAINCODE_LANG} --label ${CHAINCODE_LABEL}"
 
 echo "[2/7] Installing chaincode package on both peers"
@@ -100,6 +102,7 @@ install_on_org() {
     return
   fi
 
+  # Re-runs are expected during debug; treat already-installed as success
   if printf '%s\n' "${output}" | grep -qi "already successfully installed"; then
     printf '%s\n' "${output}"
     return
@@ -125,6 +128,7 @@ fi
 echo "Resolved package ID: ${package_id}"
 
 set +e
+# Namespace not found is normal before the first commit; other errors must fail fast
 already_committed=$(run_peer_cli orgj2 "peer lifecycle chaincode querycommitted -C ${CHANNEL_NAME} --name ${CHAINCODE_NAME}" 2>&1)
 already_committed_rc=$?
 set -e
@@ -146,6 +150,7 @@ echo "[4/7] Approving definition for OrgEM"
 run_peer_cli orgem "peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDR} --channelID ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --package-id ${package_id} --sequence ${CHAINCODE_SEQUENCE} --signature-policy \"${ENDORSEMENT_POLICY}\" --tls --cafile ${ORDERER_CA} --clientauth --certfile /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.crt --keyfile /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.key --waitForEventTimeout ${WAIT_FOR_EVENT_TIMEOUT}"
 
 echo "[5/7] Verifying commit readiness"
+# Both org approvals must be true before commit
 run_peer_cli orgj2 "peer lifecycle chaincode checkcommitreadiness -C ${CHANNEL_NAME} --name ${CHAINCODE_NAME} --version ${CHAINCODE_VERSION} --sequence ${CHAINCODE_SEQUENCE} --signature-policy \"${ENDORSEMENT_POLICY}\" --output json"
 
 echo "[6/7] Committing chaincode definition"
@@ -156,6 +161,7 @@ run_peer_cli orgj2 "peer lifecycle chaincode querycommitted -C ${CHANNEL_NAME} -
 
 if [ "${RUN_SMOKE_TEST}" = "true" ]; then
   echo "Running smoke test invoke/query"
+  # Use unique IDs so smoke tests are repeatable across multiple runs
   smoke_id="smoke-$(date +%s)"
   payload='{"actor":"zone1","decision":"APPROVED","reason":"smoke-test"}'
   app_hash=$(python3 -c 'import hashlib, json; payload={"actor":"zone1","decision":"APPROVED","reason":"smoke-test"}; canon=json.dumps(payload, separators=(",", ":"), sort_keys=True); print(hashlib.sha256(canon.encode()).hexdigest())')

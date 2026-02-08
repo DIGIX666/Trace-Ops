@@ -5,6 +5,8 @@ ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 CRYPTO_DIR="${ROOT_DIR}/crypto"
 OUT_DIR="${ROOT_DIR}/config/connection-profiles"
 
+# Connection profiles are generated artifacts for Zone1/Zone3 SDK clients
+
 ZONE2_PUBLIC_HOST=${ZONE2_PUBLIC_HOST:-localhost}
 ORDERER0_PORT=${ORDERER0_PORT:-7050}
 ORDERER1_PORT=${ORDERER1_PORT:-8050}
@@ -27,6 +29,7 @@ done
 mkdir -p "${OUT_DIR}"
 
 json_pem() {
+  # Keep PEM content JSON-safe for inline tlsCACerts fields
   python3 -c 'import json,sys; print(json.dumps(open(sys.argv[1], encoding="utf-8").read()))' "$1"
 }
 

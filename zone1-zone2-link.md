@@ -15,7 +15,7 @@ sudo ./zone2-ledger/scripts/bootstrap-network.sh
 ```
 
 ```bash
-./zone2-ledger/scripts/generate-connection-profiles.sh
+sudo ./zone2-ledger/scripts/generate-connection-profiles.sh
 ```
 
 ### Copiez ce fichier :

@@ -67,55 +67,98 @@ async function createGatewayConnection() {
 
 // --- FONCTIONS CRUD ---
 
+async function pushData(ID, payload, appHash) {
+    const { gateway, client } = await createGatewayConnection();
+    try {
+        const network = gateway.getNetwork(CHANNEL_NAME);
+        const contract = network.getContract(CHAINCODE_NAME);
+
+        console.log(`\nSubmitDecision --> pushData, ID: ${ID}`);
+
+        const payloadString = JSON.stringify(payload);
+
+        await contract.submitTransaction("SubmitDecision", ID, payloadString, appHash);
+        
+        return { success: true };
+    } catch(err) {
+        console.log("Error pushing data : ", err)
+        throw err
+    } finally {
+        gateway.close();
+        client.close();
+    }
+}
+
+async function pullData(ID) {
+    const { gateway, client } = await createGatewayConnection();
+    try {
+        const network = gateway.getNetwork(CHANNEL_NAME);
+        const contract = network.getContract(CHAINCODE_NAME);
+
+        console.log(`\nQueryDecision --> pullData, ID: ${ID}`);
+
+        const resultBytes = await contract.evaluateTransaction("QueryDecision", ID);
+        const resultString = new TextDecoder().decode(resultBytes);
+        
+        return JSON.parse(resultString);
+    } catch(err) {
+        console.log("Error pulling data : ", err)
+        throw err
+    } finally {
+        gateway.close();
+        client.close();
+    }
+}
+
 /**
  * Écriture : Appelle SubmitDecision
  * @param {string} decisionID - Unique ID
  * @param {object} payload - Données JSON
  * @param {string} appHash - Hash SHA256 calculé côté application
  */
-async function submitDecision(decisionID, payload, appHash) {
-    const { gateway, client } = await createGatewayConnection();
-    try {
-        const network = gateway.getNetwork(CHANNEL_NAME);
-        const contract = network.getContract(CHAINCODE_NAME);
+// async function submitDecision(decisionID, payload, appHash) {
+//     const { gateway, client } = await createGatewayConnection();
+//     try {
+//         const network = gateway.getNetwork(CHANNEL_NAME);
+//         const contract = network.getContract(CHAINCODE_NAME);
 
-        console.log(`\n--> Submit Transaction: SubmitDecision, ID: ${decisionID}`);
+//         console.log(`\n--> Submit Transaction: SubmitDecision, ID: ${decisionID}`);
 
-        // On transforme l'objet payload en string JSON pour le Go
-        const payloadString = JSON.stringify(payload);
+//         // On transforme l'objet payload en string JSON pour le Go
+//         const payloadString = JSON.stringify(payload);
 
-        // submitTransaction envoie la donnée à l'orderer et attend le bloc
-        await contract.submitTransaction('SubmitDecision', decisionID, payloadString, appHash);
+//         // submitTransaction envoie la donnée à l'orderer et attend le bloc
+//         await contract.submitTransaction('SubmitDecision', decisionID, payloadString, appHash);
         
-        console.log('*** Transaction committed successfully');
-        return { success: true };
-    } catch(err) {
-        console.log("Error submiting decision : ", err)
-    } finally {
-        gateway.close();
-        client.close();
-    }
-}
+//         console.log('*** Transaction committed successfully');
+//         return { success: true };
+//     } catch(err) {
+//         console.log("Error submiting decision : ", err)
+//     } finally {
+//         gateway.close();
+//         client.close();
+//     }
+// }
 
 /**
  * Lecture : Appelle QueryDecision
  */
-async function queryDecision(decisionID) {
-    const { gateway, client } = await createGatewayConnection();
-    try {
-        const network = gateway.getNetwork(CHANNEL_NAME);
-        const contract = network.getContract(CHAINCODE_NAME);
+// async function queryDecision(decisionID) {
+//     const { gateway, client } = await createGatewayConnection();
+//     try {
+//         const network = gateway.getNetwork(CHANNEL_NAME);
+//         const contract = network.getContract(CHAINCODE_NAME);
 
-        console.log(`\n--> Evaluate Transaction: QueryDecision, ID: ${decisionID}`);
+//         console.log(`\n--> Evaluate Transaction: QueryDecision, ID: ${decisionID}`);
 
-        const resultBytes = await contract.evaluateTransaction('QueryDecision', decisionID);
-        const resultString = new TextDecoder().decode(resultBytes);
+//         const resultBytes = await contract.evaluateTransaction('QueryDecision', decisionID);
+//         const resultString = new TextDecoder().decode(resultBytes);
         
-        return JSON.parse(resultString);
-    } finally {
-        gateway.close();
-        client.close();
-    }
-}
+//         return JSON.parse(resultString);
+//     } finally {
+//         gateway.close();
+//         client.close();
+//     }
+// }
 
-module.exports = { submitDecision, queryDecision };
+module.exports = { pushData, pullData };
