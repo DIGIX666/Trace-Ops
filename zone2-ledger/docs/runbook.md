@@ -8,6 +8,7 @@ For a quick project overview and quick-start commands, see `zone2-ledger/README.
 
 - Docker
 - Docker Compose v2 (`docker compose`)
+- Docker Desktop 4.49.0 : v28.5.1
 - Free ports: `7054`, `5984`, `6984`, `7050`, `8050`, `7051`, `9051`, `7052`, `9052`
 
 ## Useful paths

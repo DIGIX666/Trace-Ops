@@ -194,6 +194,8 @@ services:
       CORE_PEER_TLS_CERT_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.crt
       CORE_PEER_TLS_KEY_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.key
       CORE_PEER_TLS_ROOTCERT_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/ca.crt
+      CORE_PEER_TLS_CLIENTAUTHREQUIRED: "true"
+      CORE_PEER_TLS_CLIENTROOTCAS_FILES: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/ca.crt
       CORE_PEER_TLS_CLIENTCERT_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.crt
       CORE_PEER_TLS_CLIENTKEY_FILE: /crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/server.key
       CORE_VM_ENDPOINT: unix:///var/run/docker.sock
@@ -249,6 +251,8 @@ services:
       CORE_PEER_TLS_CERT_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.crt
       CORE_PEER_TLS_KEY_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.key
       CORE_PEER_TLS_ROOTCERT_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/ca.crt
+      CORE_PEER_TLS_CLIENTAUTHREQUIRED: "true"
+      CORE_PEER_TLS_CLIENTROOTCAS_FILES: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/ca.crt
       CORE_PEER_TLS_CLIENTCERT_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.crt
       CORE_PEER_TLS_CLIENTKEY_FILE: /crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/server.key
       CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: traceops

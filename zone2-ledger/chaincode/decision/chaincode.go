@@ -15,13 +15,13 @@ type DecisionContract struct {
 }
 
 type DecisionRecord struct {
-	ID          string          `json:"id"`
-	Payload     json.RawMessage `json:"payload"`
-	AppHash     string          `json:"appHash"`
-	LedgerHash  string          `json:"ledgerHash"`
-	TxID        string          `json:"txId"`
-	TxTimestamp string          `json:"txTimestamp"`
-	Source      string          `json:"source"`
+	ID          string `json:"id"`
+	Payload     string `json:"payload"`
+	AppHash     string `json:"appHash"`
+	LedgerHash  string `json:"ledgerHash"`
+	TxID        string `json:"txId"`
+	TxTimestamp string `json:"txTimestamp"`
+	Source      string `json:"source"`
 }
 
 func canonicalizeJSON(raw string) ([]byte, error) {
@@ -85,7 +85,7 @@ func (c *DecisionContract) SubmitDecision(ctx contractapi.TransactionContextInte
 
 	record := DecisionRecord{
 		ID:          decisionID,
-		Payload:     normalizedPayload,
+		Payload:     string(normalizedPayload),
 		AppHash:     appHash,
 		LedgerHash:  ledgerHash,
 		TxID:        ctx.GetStub().GetTxID(),
