@@ -1,3 +1,4 @@
+const { submitDecision, queryDecision } = require('./fabricService.js');
 const express = require('express');
 const axios = require('axios');
 const { expressjwt: jwt } = require('express-jwt');
@@ -117,7 +118,7 @@ app.post('/analyze/:alert_id', checkJwt, async (req, res) => {
 // ──────────────────────────────────────────────────────────────
 // POST /decision  (décision + écriture blockchain simulée)
 // ──────────────────────────────────────────────────────────────
-app.post('/decision', checkJwt, (req, res) => {
+app.post('/decision', checkJwt, async (req, res) => {
     const userRoles = req.auth.realm_access?.roles || [];
 
     if (!userRoles.includes('decideur')) {
@@ -129,23 +130,23 @@ app.post('/decision', checkJwt, (req, res) => {
     const payloadStr = JSON.stringify(decision);
     const hash = crypto.createHash('sha256').update(payloadStr).digest('hex');
 
-    // try { 
-    //     // --- ÉCRITURE ---
-    //     console.log("Envoi de la décision...");
-    //     await submitDecision(alertId, decision, hash);
+    try { 
+        // --- ÉCRITURE ---
+        console.log("Envoi de la décision...");
+        await submitDecision(alertId, decision, hash);
 
-    //     // --- LECTURE ---
-    //     console.log("Lecture immédiate...");
-    //     const record = await queryDecision(alertId);
+        // --- LECTURE ---
+        console.log("Lecture immédiate...");
+        const record = await queryDecision(alertId);
         
-    //     console.log("Record récupéré depuis la Blockchain :");
-    //     console.log(`- ID: ${record.id}`);
-    //     console.log(`- TxID: ${record.txId}`);
-    //     console.log(`- Payload récupéré:`, record.payload);
+        console.log("Record récupéré depuis la Blockchain :");
+        console.log(`- ID: ${record.id}`);
+        console.log(`- TxID: ${record.txId}`);
+        console.log(`- Payload récupéré:`, record.payload);
         
-    // } catch (error) {
-    //     console.error("Échec :", error.message);
-    // }
+    } catch (error) {
+        console.error("Échec :", error.message);
+    }
 
     // --- Il faudra prendre ce que return la DB pour être sûr des données
     const alert = alerts_db.find(a => a.id === alertId);

@@ -31,7 +31,6 @@ services:
       - REALM_NAME=trace-ops
     networks:
       - zone1-network
-      # - fabric-network # Connexion au réseau de la Zone 2
 
   # --- Service Décision EM (Backend Node.js API) ---
   backend-em:
@@ -39,6 +38,7 @@ services:
     container_name: trace-ops-em
     networks:
       - zone1-network
+      - fabric-network
     extra_hosts:
       - "peer0.orgem.traceops.local:host-gateway"
       - "peer0.orgj2.traceops.local:host-gateway"
@@ -47,7 +47,6 @@ services:
     environment:
       - GRPC_TRACE=transport_security,tss
       - GRPC_VERBOSITY=DEBUG
-      - NODE_TLS_REJECT_UNAUTHORIZED=0
 
   keycloak:
     extends:
@@ -76,9 +75,9 @@ networks:
   zone1-network:
     driver: bridge
   # On référence le réseau défini dans la Zone 2
-  # fabric-network:
-  #   external: true
-  #   name: traceops
+  fabric-network:
+    external: true
+    name: traceops
 
 volumes:
   keycloak_db_data:
