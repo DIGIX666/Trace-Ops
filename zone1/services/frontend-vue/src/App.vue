@@ -26,9 +26,6 @@ const navRoles = ['operateur','analyste','decideur'];
 onMounted(() => {
   if (keycloak?.authenticated) {
     userRoles.value = keycloak.tokenParsed?.realm_access?.roles || [];
-    console.log(userRoles);
-    console.log("Nombre de rôles :", userRoles.value.length);
-    console.log(userRoles.value.filter(item => navRoles.includes(item)).length)
   }
 });
 
