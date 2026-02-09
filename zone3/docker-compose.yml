@@ -1,0 +1,42 @@
+services:
+  # --- Reverse Proxy ---
+  nginx-zone3:
+    image: nginx:stable-alpine
+    container_name: zone3-nginx
+    ports:
+      - "8083:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - zone3_net
+      - shared_network
+    depends_on:
+      - backend-timeline
+      - frontend-retex
+
+  # --- Backend (Mock) ---
+  backend-timeline:
+    build: ./services/backend-timeline
+    container_name: zone3-backend
+    environment:
+      - MOCK_MODE=true
+      - KEYCLOAK_URL=http://keycloak:8080
+    networks:
+      - zone3_net
+      - shared_network
+
+  # --- Frontend (Vue) ---
+  frontend-retex:
+    build: ./services/frontend-retex
+    container_name: zone3-frontend
+    networks:
+      - zone3_net
+      - shared_network
+
+networks:
+  zone3_net:
+    driver: bridge
+  shared_network:
+    external: true
+    name: zone1_zone1-network
