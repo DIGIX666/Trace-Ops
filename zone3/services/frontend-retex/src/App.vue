@@ -1,54 +1,75 @@
 <template>
-  <div class="container">
-    <div class="header">
-      <h1>📅 RETEX Timeline (Zone 3)</h1>
-      <button @click="fetchData">Rafraîchir</button>
-    </div>
+  <header>
+    <div class="logo">TRACE-OPS <span class="zone-badge">ZONE 3</span></div>
+    <nav>
+      <RouterLink v-if="hasRole('admin')" to="/timeline"
+        >Timeline</RouterLink
+      >
+    </nav>
+    <RouterLink v-if="keycloak?.authenticated" to="/logout">Déconnexion</RouterLink>
+  </header>
 
-    <div v-if="loading">Chargement des données...</div>
-    <div v-else-if="error" style="color: red;">{{ error }}</div>
-
-    <div v-else>
-      <div v-for="event in events" :key="event.id" class="card">
-        <div style="display:flex; justify-content:space-between;">
-            <strong>{{ formatTime(event.timestamp) }}</strong>
-            <span :class="['badge', event.type]">{{ event.type }}</span>
-        </div>
-        <p><strong>{{ event.author }}</strong>: {{ event.content.message || event.content.action }}</p>
-        <small>ID: {{ event.id }} | Status: {{ event.status }}</small>
-      </div>
-    </div>
-  </div>
+  <main>
+    <RouterView />
+  </main>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import axios from 'axios';
-
-const events = ref([]);
-const loading = ref(true);
-const error = ref(null);
-
-// Note: '/api' sera redirigé par Nginx vers le backend
-const fetchData = async () => {
-  loading.value = true;
-  error.value = null;
-  try {
-    const response = await axios.get('/api/timeline');
-    events.value = response.data;
-  } catch (err) {
-    error.value = "Erreur de connexion au Backend Zone 3";
-    console.error(err);
-  } finally {
-    loading.value = false;
-  }
-};
-
-const formatTime = (isoString) => {
-    return new Date(isoString).toLocaleString();
-}
+import { RouterLink, RouterView } from "vue-router";
+import { inject, onMounted, ref } from "vue";
+const keycloak = window.__KEYCLOAK
+const userRoles = ref([]);
 
 onMounted(() => {
-  fetchData();
+  if (keycloak?.authenticated) {
+    userRoles.value = keycloak.tokenParsed?.realm_access?.roles || [];
+  }
 });
+
+const hasRole = (role) => userRoles.value.includes(role);
 </script>
+
+<style>
+body {
+  font-family: "Arial", sans-serif;
+  margin: 0;
+  background-color: #f0f2f5;
+  color: #333;
+}
+header {
+  background-color: #2c3e50;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+}
+.logo {
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+.zone-badge {
+  background: #e74c3c;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-left: 10px;
+}
+nav a {
+  color: #aaa;
+  text-decoration: none;
+  margin-left: 20px;
+  font-weight: 500;
+  transition: 0.3s;
+}
+nav a:hover,
+nav a.router-link-active {
+  color: white;
+}
+main {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+</style>
