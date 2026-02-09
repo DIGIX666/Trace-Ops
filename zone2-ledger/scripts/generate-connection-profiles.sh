@@ -7,7 +7,10 @@ OUT_DIR="${ROOT_DIR}/config/connection-profiles"
 
 # Connection profiles are generated artifacts for Zone1/Zone3 SDK clients
 
-ZONE2_PUBLIC_HOST=${ZONE2_PUBLIC_HOST:-localhost}
+ORDERER0_HOST=${ORDERER0_HOST:-orderer0.traceops.local}
+ORDERER1_HOST=${ORDERER1_HOST:-orderer1.traceops.local}
+PEER_J2_HOST=${PEER_J2_HOST:-peer0.orgj2.traceops.local}
+PEER_EM_HOST=${PEER_EM_HOST:-peer0.orgem.traceops.local}
 ORDERER0_PORT=${ORDERER0_PORT:-7050}
 ORDERER1_PORT=${ORDERER1_PORT:-8050}
 PEER_J2_PORT=${PEER_J2_PORT:-7051}
@@ -72,7 +75,7 @@ cat > "${ZONE1_OUT}" <<EOF
   },
   "orderers": {
     "orderer0.traceops.local": {
-      "url": "grpcs://${ZONE2_PUBLIC_HOST}:${ORDERER0_PORT}",
+      "url": "grpcs://${ORDERER0_HOST}:${ORDERER0_PORT}",
       "grpcOptions": {
         "ssl-target-name-override": "orderer0.traceops.local"
       },
@@ -81,7 +84,7 @@ cat > "${ZONE1_OUT}" <<EOF
       }
     },
     "orderer1.traceops.local": {
-      "url": "grpcs://${ZONE2_PUBLIC_HOST}:${ORDERER1_PORT}",
+      "url": "grpcs://${ORDERER1_HOST}:${ORDERER1_PORT}",
       "grpcOptions": {
         "ssl-target-name-override": "orderer1.traceops.local"
       },
@@ -92,7 +95,7 @@ cat > "${ZONE1_OUT}" <<EOF
   },
   "peers": {
     "peer0.orgj2.traceops.local": {
-      "url": "grpcs://${ZONE2_PUBLIC_HOST}:${PEER_J2_PORT}",
+      "url": "grpcs://${PEER_J2_HOST}:${PEER_J2_PORT}",
       "grpcOptions": {
         "ssl-target-name-override": "peer0.orgj2.traceops.local"
       },
@@ -101,7 +104,7 @@ cat > "${ZONE1_OUT}" <<EOF
       }
     },
     "peer0.orgem.traceops.local": {
-      "url": "grpcs://${ZONE2_PUBLIC_HOST}:${PEER_EM_PORT}",
+      "url": "grpcs://${PEER_EM_HOST}:${PEER_EM_PORT}",
       "grpcOptions": {
         "ssl-target-name-override": "peer0.orgem.traceops.local"
       },
@@ -156,7 +159,7 @@ cat > "${ZONE3_OUT}" <<EOF
   },
   "orderers": {
     "orderer0.traceops.local": {
-      "url": "grpcs://${ZONE2_PUBLIC_HOST}:${ORDERER0_PORT}",
+      "url": "grpcs://${ORDERER0_HOST}:${ORDERER0_PORT}",
       "grpcOptions": {
         "ssl-target-name-override": "orderer0.traceops.local"
       },
@@ -165,7 +168,7 @@ cat > "${ZONE3_OUT}" <<EOF
       }
     },
     "orderer1.traceops.local": {
-      "url": "grpcs://${ZONE2_PUBLIC_HOST}:${ORDERER1_PORT}",
+      "url": "grpcs://${ORDERER1_HOST}:${ORDERER1_PORT}",
       "grpcOptions": {
         "ssl-target-name-override": "orderer1.traceops.local"
       },
@@ -176,7 +179,7 @@ cat > "${ZONE3_OUT}" <<EOF
   },
   "peers": {
     "peer0.orgj2.traceops.local": {
-      "url": "grpcs://${ZONE2_PUBLIC_HOST}:${PEER_J2_PORT}",
+      "url": "grpcs://${PEER_J2_HOST}:${PEER_J2_PORT}",
       "grpcOptions": {
         "ssl-target-name-override": "peer0.orgj2.traceops.local"
       },
@@ -185,7 +188,7 @@ cat > "${ZONE3_OUT}" <<EOF
       }
     },
     "peer0.orgem.traceops.local": {
-      "url": "grpcs://${ZONE2_PUBLIC_HOST}:${PEER_EM_PORT}",
+      "url": "grpcs://${PEER_EM_HOST}:${PEER_EM_PORT}",
       "grpcOptions": {
         "ssl-target-name-override": "peer0.orgem.traceops.local"
       },
@@ -212,3 +215,27 @@ EOF
 echo "Generated connection profiles:"
 echo "- ${ZONE1_OUT}"
 echo "- ${ZONE3_OUT}"
+
+# Also mirror Zone1 profile into the Zone1 app workspace (if present)
+ZONE1_APP_ROOT="${ROOT_DIR}/../zone1"
+ZONE1_APP_CONN_DIR="${ZONE1_APP_ROOT}/connection-profiles"
+
+if [ -d "${ZONE1_APP_ROOT}" ]; then
+  mkdir -p "${ZONE1_APP_CONN_DIR}"
+  cp -f "${ZONE1_OUT}" "${ZONE1_APP_CONN_DIR}/zone1-write-connection.json"
+  echo "- ${ZONE1_APP_CONN_DIR}/zone1-write-connection.json"
+else
+  echo "Zone1 workspace not found at ${ZONE1_APP_ROOT}, skipping mirror copy."
+fi
+
+# Also mirror Zone3 profile into the Zone3 app workspace (if present)
+ZONE3_APP_ROOT="${ROOT_DIR}/../zone3"
+ZONE3_APP_CONN_DIR="${ZONE3_APP_ROOT}/connection-profiles"
+
+if [ -d "${ZONE3_APP_ROOT}" ]; then
+  mkdir -p "${ZONE3_APP_CONN_DIR}"
+  cp -f "${ZONE3_OUT}" "${ZONE3_APP_CONN_DIR}/zone3-read-connection.json"
+  echo "- ${ZONE3_APP_CONN_DIR}/zone3-read-connection.json"
+else
+  echo "Zone3 workspace not found at ${ZONE3_APP_ROOT}, skipping mirror copy."
+fi
