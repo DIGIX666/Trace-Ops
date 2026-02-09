@@ -55,5 +55,6 @@ zone2-ledger/config/connection-profiles/*.json
 **/.DS_Store
 
 zone1-write-connection.json
+zone3-read-connection.json
 vendor
 wallet

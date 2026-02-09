@@ -1,14 +1,13 @@
-# Stage de build (pour plus tard quand le code Vue sera là)
+# Build Stage
 FROM node:18-alpine as build-stage
 WORKDIR /app
 COPY package*.json ./
-# RUN npm install
-# COPY . .
-# RUN npm run build
+RUN npm install
+COPY . .
+RUN npm run build
 
-# Stage de production (Simulation pour l'instant)
+# Production Stage (Nginx)
 FROM nginx:stable-alpine
-# Pour l'instant on crée un index.html bidon pour tester le conteneur
-RUN echo "<h1>Zone 3 - RETEX UI Ready</h1>" > /usr/share/nginx/html/index.html
+COPY --from=build-stage /app/dist /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
