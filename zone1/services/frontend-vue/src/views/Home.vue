@@ -46,21 +46,40 @@ const hasRole = (role) => userRoles.value.includes(role);
   text-align: center;
 }
 
+.menu-card a {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  color: black;
+  text-decoration: none;
+  height: 100%;
+}
+
 .menu-card {
-  position: relative;
-  width: 100%;
-  height: 100px;
   border: 1px solid;
+  height: 100px;
+  position: relative;
+}
+
+.menu-card a {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  color: black;
+  position: relative;
 }
 
 .menu-card a::after {
   content: "→";
   position: absolute;
-  bottom: 10px;
   right: 30px;
   font-size: 20px;
   color: gray;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .menu-card a:hover::after {
