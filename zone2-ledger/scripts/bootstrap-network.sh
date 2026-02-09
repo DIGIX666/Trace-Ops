@@ -87,6 +87,46 @@ run_peer_cli() {
     bash -c "${command}"
 }
 
+sync_zone1_wallet() {
+  # Mirror OrgEM admin cert/key into Zone1 wallet for backend-em Fabric client
+  local zone1_root="${ROOT_DIR}/../zone1"
+  local zone1_wallet="${zone1_root}/wallet"
+  local orgem_admin_msp="${ROOT_DIR}/crypto/organizations/peerOrganizations/orgem.traceops.local/users/Admin@orgem.traceops.local/msp"
+  local cert_src="${orgem_admin_msp}/signcerts/cert.pem"
+  local key_files
+  local key_src
+
+  if [ ! -d "${zone1_root}" ]; then
+    echo "Zone1 workspace not found at ${zone1_root}, skipping wallet sync."
+    return 0
+  fi
+
+  if [ ! -f "${cert_src}" ]; then
+    echo "Missing OrgEM admin cert at ${cert_src}" >&2
+    return 1
+  fi
+
+  shopt -s nullglob
+  key_files=("${orgem_admin_msp}/keystore/"*_sk)
+  shopt -u nullglob
+
+  if [ "${#key_files[@]}" -eq 0 ]; then
+    echo "Missing OrgEM admin private key (*_sk) in ${orgem_admin_msp}/keystore" >&2
+    return 1
+  fi
+
+  key_src="${key_files[0]}"
+
+  mkdir -p "${zone1_wallet}"
+  cp -f "${cert_src}" "${zone1_wallet}/cert.pem"
+  cp -f "${key_src}" "${zone1_wallet}/"
+  chmod 644 "${zone1_wallet}/cert.pem" "${zone1_wallet}/$(basename "${key_src}")"
+
+  echo "Synced Zone1 wallet from OrgEM admin MSP:"
+  echo "- ${zone1_wallet}/cert.pem"
+  echo "- ${zone1_wallet}/$(basename "${key_src}")"
+}
+
 echo "[1/6] Starting CA and CouchDB services"
 if [ "${CLEAN_START}" = "true" ]; then
   echo "Cleaning previous crypto artifacts for a fresh bootstrap"
@@ -103,6 +143,9 @@ extract_ca_cert
 
 echo "[3/6] Bootstrapping identities via Fabric CA"
 "${ROOT_DIR}/scripts/ca-bootstrap.sh"
+
+echo "[3b/6] Syncing Zone1 wallet artifacts"
+sync_zone1_wallet
 
 echo "[4/6] Generating genesis/channel/anchor artifacts"
 "${ROOT_DIR}/scripts/generate-channel-artifacts.sh"

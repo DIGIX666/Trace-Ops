@@ -18,14 +18,13 @@ sudo ./zone2-ledger/scripts/bootstrap-network.sh
 sudo ./zone2-ledger/scripts/generate-connection-profiles.sh
 ```
 
-### Copiez ce fichier :
+### Vérifiez le profil généré/copié automatiquement :
 
-zone2-ledger/config/connection-profiles/zone1-write-connection.json
-ici :
-zone1/connection-profiles/zone1-write-connection.json
+Depuis `generate-connection-profiles.sh`, le fichier est généré dans Zone2 **et** recopié automatiquement dans Zone1.
 
 ```bash
-cp zone2-ledger/config/connection-profiles/zone1-write-connection.json zone1/connection-profiles/zone1-write-connection.json
+ls -l zone2-ledger/config/connection-profiles/zone1-write-connection.json
+ls -l zone1/connection-profiles/zone1-write-connection.json
 ```
 
 ### Runnez les tests au cas où:
@@ -34,48 +33,23 @@ cp zone2-ledger/config/connection-profiles/zone1-write-connection.json zone1/con
 ./zone2-ledger/scripts/run-unit-tests.sh
 ```
 
-### Modifiez le fichier zone1/services/backend-em/zone1-write-connection.json :
 
-- remplacer tous les localhosts par les noms des orderers / peers correspondant (exemple:)
+### identités Fabric dans `zone1/wallet` :
 
-```json
-[...]
-  "orderers": {
-    "orderer0.traceops.local": {
-      "url": "grpcs://orderer0.traceops.local:7050",
-      [...]
-    },
-    "orderer1.traceops.local": {
-      "url": "grpcs://orderer1.traceops.local:8050",
-      [...]
-    }
-  },
-  "peers": {
-    "peer0.orgj2.traceops.local": {
-      "url": "grpcs://peer0.orgj2.traceops.local:7051",
-      [...]
-    },
-    "peer0.orgem.traceops.local": {
-      "url": "grpcs://peer0.orgem.traceops.local:9051",
-      [...]
-    }
-  },
-[...]
+Le backend EM attend `wallet/cert.pem` et un fichier `*_sk` dans `zone1/wallet`.
+
+Vérification rapide :
+
+```bash
+ls -l zone1/wallet
 ```
 
-### Pour le moment, il faut récupérer les fichiers cert.pem et \*\_sk à la main, et les mettre dans le dossier zone1/wallet/, voici comment faire :
-
-- le fichier cert.pem se situe ici:
-  zone2-ledger/crypto/organizations/peerOrganizations/orgj2.traceops.local/users/Admin@orgj2.traceops.local/msp/signcerts/cert.pem
-  (on peut juste copier collé le contenue)
-
-- le fichier \*\_sk se situe ici:
-  zone2-ledger/crypto/organizations/peerOrganizations/orgj2.traceops.local/users/Admin@orgj2.traceops.local/msp/keystore/\*sk
-  (on peut juste copier collé le contenue)
-
-  ATTENTION => le fichier sk est protégé par des permissions. Le plus simple pour les 2 fichiers est de sudo cat /path/ ou sudo chmod /path/ le fichier et de copier le résultat dans cert.pem et hello_sk dans le dossier /wallet/
 
 ### Une fois cela de fait, on peut lancer la zone 1:
+
+[Configuration de Keycloak](/keycloak-config/README-keycloak.md)
+
+AND 
 
 ```bash
 make z1-build
