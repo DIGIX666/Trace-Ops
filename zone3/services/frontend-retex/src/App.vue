@@ -5,6 +5,9 @@
       <RouterLink v-if="hasRole('admin')" to="/timeline"
         >Timeline</RouterLink
       >
+      <RouterLink v-if="hasRole('admin')" to="/tracescan"
+        >TraceScan</RouterLink
+      >
     </nav>
     <RouterLink v-if="keycloak?.authenticated" to="/logout">Déconnexion</RouterLink>
   </header>
