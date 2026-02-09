@@ -33,7 +33,6 @@ ls -l zone1/connection-profiles/zone1-write-connection.json
 ./zone2-ledger/scripts/run-unit-tests.sh
 ```
 
-
 ### identités Fabric dans `zone1/wallet` :
 
 Le backend EM attend `wallet/cert.pem` et un fichier `*_sk` dans `zone1/wallet`.
@@ -44,13 +43,18 @@ Vérification rapide :
 ls -l zone1/wallet
 ```
 
-
 ### Une fois cela de fait, on peut lancer la zone 1:
 
 [Configuration de Keycloak](/keycloak-config/README-keycloak.md)
 
-AND 
+AND
 
 ```bash
 make z1-build
+```
+
+### On peut aussi appeler la zone 3 après la zone 1:
+
+```bash
+make z3-build
 ```
