@@ -42,31 +42,46 @@ trap 'rm -rf "${tmp_dir}"' EXIT
 
 # Run tests in a temp sandbox to avoid mutating repository files
 
-mkdir -p "${tmp_dir}/scripts"
-cp "${SOURCE_SCRIPT}" "${tmp_dir}/scripts/generate-connection-profiles.sh"
-chmod +x "${tmp_dir}/scripts/generate-connection-profiles.sh"
+sandbox_root="${tmp_dir}/zone2-ledger"
+script_path="${sandbox_root}/scripts/generate-connection-profiles.sh"
 
-make_cert "${tmp_dir}/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt"
-make_cert "${tmp_dir}/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt"
-make_cert "${tmp_dir}/crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/ca.crt"
-make_cert "${tmp_dir}/crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/ca.crt"
+mkdir -p "${sandbox_root}/scripts"
+cp "${SOURCE_SCRIPT}" "${script_path}"
+chmod +x "${script_path}"
 
-ZONE2_PUBLIC_HOST="zone2.internal" "${tmp_dir}/scripts/generate-connection-profiles.sh"
+make_cert "${sandbox_root}/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer0.traceops.local/tls/ca.crt"
+make_cert "${sandbox_root}/crypto/organizations/ordererOrganizations/traceops.local/orderers/orderer1.traceops.local/tls/ca.crt"
+make_cert "${sandbox_root}/crypto/organizations/peerOrganizations/orgj2.traceops.local/peers/peer0.orgj2.traceops.local/tls/ca.crt"
+make_cert "${sandbox_root}/crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/ca.crt"
 
-zone1_profile="${tmp_dir}/config/connection-profiles/zone1-write-connection.json"
-zone3_profile="${tmp_dir}/config/connection-profiles/zone3-read-connection.json"
+mkdir -p "${tmp_dir}/zone1" "${tmp_dir}/zone3"
+
+ORDERER0_HOST="ord0.internal" \
+ORDERER1_HOST="ord1.internal" \
+PEER_J2_HOST="peerj2.internal" \
+PEER_EM_HOST="peerem.internal" \
+"${script_path}"
+
+zone1_profile="${sandbox_root}/config/connection-profiles/zone1-write-connection.json"
+zone3_profile="${sandbox_root}/config/connection-profiles/zone3-read-connection.json"
+zone1_mirror="${tmp_dir}/zone1/connection-profiles/zone1-write-connection.json"
+zone3_mirror="${tmp_dir}/zone3/connection-profiles/zone3-read-connection.json"
 
 [ -f "${zone1_profile}" ] || fail "zone1 profile was not generated"
 [ -f "${zone3_profile}" ] || fail "zone3 profile was not generated"
+[ -f "${zone1_mirror}" ] || fail "zone1 mirror profile was not copied"
+[ -f "${zone3_mirror}" ] || fail "zone3 mirror profile was not copied"
 
 assert_json_file "${zone1_profile}" || fail "zone1 profile is not valid JSON"
 assert_json_file "${zone3_profile}" || fail "zone3 profile is not valid JSON"
+assert_json_file "${zone1_mirror}" || fail "zone1 mirror profile is not valid JSON"
+assert_json_file "${zone3_mirror}" || fail "zone3 mirror profile is not valid JSON"
 
-python3 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); assert d["orderers"]["orderer0.traceops.local"]["url"]=="grpcs://zone2.internal:7050"; print("ok")' "${zone1_profile}" >/dev/null || fail "zone1 profile host/port mismatch"
+python3 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); assert d["orderers"]["orderer0.traceops.local"]["url"]=="grpcs://ord0.internal:7050"; assert d["orderers"]["orderer1.traceops.local"]["url"]=="grpcs://ord1.internal:8050"; assert d["peers"]["peer0.orgj2.traceops.local"]["url"]=="grpcs://peerj2.internal:7051"; assert d["peers"]["peer0.orgem.traceops.local"]["url"]=="grpcs://peerem.internal:9051"; print("ok")' "${zone1_profile}" >/dev/null || fail "zone1 profile host overrides mismatch"
 python3 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); pem=d["orderers"]["orderer0.traceops.local"]["tlsCACerts"]["pem"]; assert "BEGIN CERTIFICATE" in pem; print("ok")' "${zone3_profile}" >/dev/null || fail "zone3 profile missing inline cert"
 
-rm -f "${tmp_dir}/crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/ca.crt"
-if "${tmp_dir}/scripts/generate-connection-profiles.sh" >/dev/null 2>&1; then
+rm -f "${sandbox_root}/crypto/organizations/peerOrganizations/orgem.traceops.local/peers/peer0.orgem.traceops.local/tls/ca.crt"
+if "${script_path}" >/dev/null 2>&1; then
   fail "script should fail when a required TLS CA file is missing"
 fi
 
