@@ -1,18 +1,13 @@
 <template>
   <header>
     <div class="logo">TRACE-OPS <span class="zone-badge">ZONE 1</span></div>
-    <nav>
-      <RouterLink v-if="hasRole('operateur')" to="/alert"
-        >Terrain (Injection)</RouterLink
-      >
-      <RouterLink v-if="hasRole('analyste')" to="/j2"
-        >J2 (Analyse)</RouterLink
-      >
-      <RouterLink v-if="hasRole('decideur')" to="/em"
-        >EM (Décision)</RouterLink
-      >
+    <nav v-if="userMultirole()">
+      <RouterLink to="/">Menu</RouterLink>
+      <RouterLink v-if="hasRole('operateur')" to="/alert">Terrain (Injection)</RouterLink>
+      <RouterLink v-if="hasRole('analyste')" to="/j2">J2 (Analyse)</RouterLink>
+      <RouterLink v-if="hasRole('decideur')" to="/em">EM (Décision)</RouterLink>
     </nav>
-    <RouterLink v-if="keycloak?.authenticated" to="/logout">Déconnexion</RouterLink>
+    <RouterLink v-if="keycloak?.authenticated" to="/logout" class="logout-button">Déconnexion</RouterLink>
   </header>
 
   <main>
@@ -26,13 +21,42 @@ import { inject, onMounted, ref } from "vue";
 const keycloak = window.__KEYCLOAK
 const userRoles = ref([]);
 
+const navRoles = ['operateur','analyste','decideur'];
+
 onMounted(() => {
   if (keycloak?.authenticated) {
     userRoles.value = keycloak.tokenParsed?.realm_access?.roles || [];
+    console.log(userRoles);
+    console.log("Nombre de rôles :", userRoles.value.length);
+    console.log(userRoles.value.filter(item => navRoles.includes(item)).length)
   }
 });
 
 const hasRole = (role) => userRoles.value.includes(role);
+
+import { useRouter } from 'vue-router';
+
+function userMultirole() {
+  const router = useRouter();
+  const userNavRoles = userRoles.value.filter(item => navRoles.includes(item));
+  console.log(userNavRoles);
+
+  if (userNavRoles.length !== 1) {
+    return true;
+  }
+
+  const rolePages = {
+    operateur: '/alert',
+    analyste: '/j2',
+    decideur: '/em'
+  };
+
+  const redirectUrl = rolePages[userNavRoles[0]];
+  router.replace(redirectUrl);
+
+  return false;
+}
+
 </script>
 
 <style>
@@ -54,6 +78,12 @@ header {
   font-weight: bold;
   font-size: 1.2rem;
 }
+
+.logout-button {
+  color: white;
+  text-decoration: none;
+}
+
 .zone-badge {
   background: #e74c3c;
   font-size: 0.8rem;
