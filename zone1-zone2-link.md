@@ -34,17 +34,15 @@ ls -l zone1/connection-profiles/zone1-write-connection.json
 ```
 
 
-### Pour le moment, il faut récupérer les fichiers cert.pem et \*\_sk à la main, et les mettre dans le dossier zone1/wallet/, voici comment faire :
+### identités Fabric dans `zone1/wallet` :
 
-- le fichier cert.pem se situe ici:
-  zone2-ledger/crypto/organizations/peerOrganizations/orgj2.traceops.local/users/Admin@orgj2.traceops.local/msp/signcerts/cert.pem
-  (on peut juste copier collé le contenue)
+Le backend EM attend `wallet/cert.pem` et un fichier `*_sk` dans `zone1/wallet`.
 
-- le fichier \*\_sk se situe ici:
-  zone2-ledger/crypto/organizations/peerOrganizations/orgj2.traceops.local/users/Admin@orgj2.traceops.local/msp/keystore/\*sk
-  (on peut juste copier collé le contenue)
+Vérification rapide :
 
-  ATTENTION => le fichier sk est protégé par des permissions. Le plus simple pour les 2 fichiers est de sudo cat /path/ ou sudo chmod /path/ le fichier et de copier le résultat dans cert.pem et hello_sk dans le dossier /wallet/
+```bash
+ls -l zone1/wallet
+```
 
 ### Une fois cela de fait, on peut lancer la zone 1:
 
