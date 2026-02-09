@@ -92,7 +92,7 @@ app.get('/health', (_req, res) => {
 app.get('/alerts', checkJwt, async (req, res) => {
   const userRoles = req.auth.realm_access?.roles || [];
 
-  if (!userRoles.includes('operateur') && !userRoles.includes('decideur')) {
+  if (!userRoles.includes('operateur') && !userRoles.includes('decideur') && !userRoles.includes('analyste')) {
     return res.status(403).json({ error: "Rôle 'operateur' ou 'decideur' requis" });
   }
 
