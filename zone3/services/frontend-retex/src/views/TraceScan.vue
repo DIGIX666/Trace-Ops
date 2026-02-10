@@ -66,6 +66,7 @@ const fetchBlocks = async () => {
   try {
     const response = await axios.get('/api/tracescan/blocks');
     blocks.value = response.data;
+    console.log(blocks.value)
     selectedTx.value = null;
   } catch (err) {
     error.value = 'Impossible de charger les blocs TraceScan.';
@@ -84,7 +85,12 @@ const selectRow = async (row) => {
   }
 };
 
-const formatDate = (iso) => new Date(iso).toLocaleString('fr-FR');
+const formatDate = (time) => {
+  const tsSeconds = parseFloat(time || 0);
+  const timestampMs = Math.floor(tsSeconds * 1000);
+  const date = new Date(timestampMs);  // Crée l'objet Date
+  return date.toLocaleString('fr-FR');
+}
 const prettyPayload = (payload) => JSON.stringify(payload, null, 2);
 
 onMounted(() => {

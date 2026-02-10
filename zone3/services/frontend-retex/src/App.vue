@@ -1,6 +1,7 @@
 <template>
   <header>
     <div class="logo">TRACE-OPS <span class="zone-badge">ZONE 3</span></div>
+    <div v-if="userMultirole()"></div>
     <nav>
       <RouterLink v-if="hasRole('admin')" to="/timeline"
         >Timeline</RouterLink
@@ -30,6 +31,35 @@ onMounted(() => {
 });
 
 const hasRole = (role) => userRoles.value.includes(role);
+
+const navRoles = ['admin'];
+
+import { useRouter, useRoute } from 'vue-router';
+
+function userMultirole() {
+  const route = useRoute();
+  const currentPath = route.path;
+  if (currentPath !== '/') {
+    return true;
+  }
+
+
+  const router = useRouter();
+  const userNavRoles = userRoles.value.filter(item => navRoles.includes(item));
+
+  if (userNavRoles.length !== 1) {
+    return true;
+  }
+
+  const rolePages = {
+    admin: '/timeline',
+ };
+
+  const redirectUrl = rolePages[userNavRoles[0]];
+  router.replace(redirectUrl);
+
+  return false;
+}
 </script>
 
 <style>

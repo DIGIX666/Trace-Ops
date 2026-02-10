@@ -43,6 +43,12 @@ Vérification rapide :
 ls -l zone1/wallet
 ```
 
+Après cela copier ce wallet dans la zone3 également !
+
+```
+cp zone1/wallet zone3/wallet
+```
+
 ### Une fois cela de fait, on peut lancer la zone 1:
 
 [Configuration de Keycloak](/keycloak-config/README-keycloak.md)
