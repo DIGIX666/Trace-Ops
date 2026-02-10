@@ -3,7 +3,7 @@
     <div class="monitor-header">
       <div>
         <h1>📅 Timeline Calendaire (Zone 3)</h1>
-        <p class="subtitle">Vue continue • Alertes & RETEX</p>
+        <p class="subtitle">Vue continue • Transactions & Événements</p>
       </div>
       <div class="actions">
         <button @click="fetchData" :disabled="loading" class="btn-refresh">
@@ -15,9 +15,7 @@
     <div v-if="error" class="error-banner">{{ error }}</div>
 
     <div class="timeline-scroll-area" ref="scrollContainer" @wheel.prevent="handleScroll">
-      
       <div class="timeline-track">
-        
         <div 
           v-for="day in calendarDays" 
           :key="day.dateKey" 
@@ -31,24 +29,24 @@
 
           <div class="day-content">
             <div 
-            v-for="event in day.events" 
-            :key="event.id"
-            class="event-node"
-            @click.stop="selectEvent(event)"
+              v-for="event in day.events" 
+              :key="event.id"
+              class="event-node"
+              @click.stop="selectEvent(event)"
             >
-            <div 
+              <div 
                 class="event-dot" 
                 :class="[
-                getBadgeClass(event.type), 
-                { 'is-active': selectedEvent && selectedEvent.id === event.id }
+                  getBadgeClass(event.mainType), 
+                  { 'is-active': selectedEvent && selectedEvent.id === event.id }
                 ]"
-            ></div>
-            
-            <div class="event-time" :class="{ 'text-active': selectedEvent?.id === event.id }">
-                {{ formatTime(event.timestamp) }}
-            </div>
-            
-            <div class="event-stem"></div>
+              ></div>
+              
+              <div class="event-time" :class="{ 'text-active': selectedEvent?.id === event.id }">
+                {{ formatTime(event.timestampMs) }}
+              </div>
+              
+              <div class="event-stem"></div>
             </div>
 
             <div v-if="day.events.length === 0" class="empty-marker"></div>
@@ -56,33 +54,40 @@
           
           <div class="day-separator"></div>
         </div>
-
       </div>
     </div>
 
+    <!-- Panneau de détail -->
     <div class="detail-panel" :class="{ 'open': selectedEvent }">
       <div v-if="selectedEvent" class="detail-wrapper">
         <div class="detail-left">
-           <span class="big-time">{{ formatTime(selectedEvent.timestamp) }}</span>
-           <span class="small-date">{{ formatFullDate(selectedEvent.timestamp) }}</span>
+          <span class="big-time">{{ formatTime(selectedEvent.timestampMs) }}</span>
+          <span class="small-date">{{ formatFullDate(selectedEvent.timestampMs) }}</span>
         </div>
         
         <div class="detail-main">
-          <div class="detail-badges">
-            <span :class="['type-tag', getBadgeClass(selectedEvent.type)]">{{ selectedEvent.type }}</span>
-            <span class="status-tag">Status: {{ selectedEvent.status }}</span>
+          <!-- Affichage dynamique de TOUT le contenu du payload -->
+          <div class="detail-payload">
+            <div v-for="(value, key) in selectedEvent.payload" :key="key" class="payload-row">
+              <span class="payload-key">{{ formatKey(key) }}</span>
+              <span class="payload-value">{{ formatValue(value) }}</span>
+            </div>
           </div>
-          <h3>{{ selectedEvent.author }}</h3>
-          <p>{{ selectedEvent.content.message || selectedEvent.content.action }}</p>
+
+          <!-- Info technique en petit -->
+          <div class="detail-footer">
+            <small>Source: {{ selectedEvent.source || '—' }}</small>
+            <small class="tx-id">tx: {{ selectedEvent.txId.slice(0,12) }}…</small>
+          </div>
         </div>
 
         <button class="close-btn" @click="selectedEvent = null">Fermer</button>
       </div>
+
       <div v-else class="detail-empty">
-        Cliquez sur un point pour voir le détail de l'alerte.
+        Cliquez sur un point pour voir les détails de l'événement.
       </div>
     </div>
-
   </div>
 </template>
 
@@ -90,87 +95,116 @@
 import { ref, computed, onMounted, nextTick } from 'vue';
 import axios from 'axios';
 
-const events = ref([]);
+const rawEvents = ref([]);
 const loading = ref(true);
 const error = ref(null);
 const selectedEvent = ref(null);
 const scrollContainer = ref(null);
 
-// --- LOGIQUE CALENDAIRE ---
+// ────────────────────────────────────────────────
+//  Normalisation des événements
+// ────────────────────────────────────────────────
+const normalizedEvents = computed(() => {
+  return rawEvents.value.map(item => {
+    let payload = {};
+    try {
+      payload = JSON.parse(item.payload || '{}');
+    } catch (e) {
+      console.warn("Payload invalide pour l'événement", item.id);
+    }
 
+    const tsSeconds = parseFloat(item.txTimestamp || 0);
+    const timestampMs = Math.floor(tsSeconds * 1000);
+
+    // On essaie de trouver une "type" principale pour la couleur du point
+    const mainType = detectMainType(payload);
+
+    return {
+      id: item.id,
+      timestampMs,
+      payload,                // ← on garde TOUT le payload
+      mainType,               // pour la couleur du point
+      source: item.source || '—',
+      txId: item.txId || '—'
+    };
+  });
+});
+
+// Détection d'un type principal pour la couleur (facultatif mais utile)
+const detectMainType = (payload) => {
+  const str = JSON.stringify(payload).toLowerCase();
+  if (str.includes('approv') || str.includes('accept') || str.includes('ok')) return 'approved';
+  if (str.includes('reject') || str.includes('deni') || str.includes('fail')) return 'rejected';
+  if (str.includes('pend') || str.includes('wait')) return 'pending';
+  if (str.includes('error') || str.includes('except')) return 'error';
+  return 'default';
+};
+
+// ────────────────────────────────────────────────
+//  Génération du calendrier
+// ────────────────────────────────────────────────
 const calendarDays = computed(() => {
-  if (events.value.length === 0) return [];
+  if (normalizedEvents.value.length === 0) return [];
 
-  // 1. Trier les events par date
-  const sortedEvents = [...events.value].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  const sorted = [...normalizedEvents.value].sort((a, b) => a.timestampMs - b.timestampMs);
 
-  // 2. Trouver date Min et Max
-  const firstEventDate = new Date(sortedEvents[0].timestamp);
-  const lastEventDate = new Date(sortedEvents[sortedEvents.length - 1].timestamp);
+  const first = new Date(sorted[0].timestampMs);
+  const last  = new Date(sorted[sorted.length - 1].timestampMs);
 
-  // 3. Appliquer le padding (-10 jours / +10 jours)
-  const startDate = addDays(firstEventDate, -10);
-  const endDate = addDays(lastEventDate, 10);
+  const startDate = addDays(first, -10);
+  const endDate   = addDays(last,  10);
 
-  // 4. Générer le tableau continu
   const timeline = [];
-  let currentDate = new Date(startDate);
-  // Normaliser pour éviter les soucis d'heure (on met tout à minuit pour la boucle)
-  currentDate.setHours(0,0,0,0);
+  let current = new Date(startDate);
+  current.setHours(0,0,0,0);
+
   const endLimit = new Date(endDate);
   endLimit.setHours(0,0,0,0);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  while (currentDate <= endLimit) {
-    const dateKey = currentDate.toISOString().split('T')[0]; // "2023-10-25"
-    
-    // Trouver les events qui matchent ce jour précis
-    const eventsForDay = sortedEvents.filter(e => {
-        return e.timestamp.startsWith(dateKey); // ou comparaison plus robuste par Date
+  while (current <= endLimit) {
+    const dateKey = current.toISOString().split('T')[0];
+
+    const eventsForDay = sorted.filter(e => {
+      const d = new Date(e.timestampMs);
+      return d.toISOString().split('T')[0] === dateKey;
     });
 
     timeline.push({
-      dateKey: dateKey,
-      dateObj: new Date(currentDate),
-      dayName: currentDate.toLocaleDateString('fr-FR', { weekday: 'short' }).toUpperCase(),
-      dayNum: currentDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }),
+      dateKey,
+      dayName: current.toLocaleDateString('fr-FR', { weekday: 'short' }).toUpperCase(),
+      dayNum: current.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }),
       isToday: dateKey === todayStr,
       events: eventsForDay
     });
 
-    // Jour suivant
-    currentDate = addDays(currentDate, 1);
+    current = addDays(current, 1);
   }
 
   return timeline;
 });
 
-// Utilitaire pour ajouter des jours
 const addDays = (date, days) => {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
+  const res = new Date(date);
+  res.setDate(res.getDate() + days);
+  return res;
 };
 
-// --- API & ACTIONS ---
-
+// ────────────────────────────────────────────────
+//  Chargement des données
+// ────────────────────────────────────────────────
 const fetchData = async () => {
   loading.value = true;
   error.value = null;
   selectedEvent.value = null;
-  
+
   try {
     const response = await axios.get('/api/timeline');
-    events.value = response.data;
-
-    // Scroll automatique vers le dernier événement (pas forcément la fin du padding)
-    nextTick(() => {
-        scrollToLastEvent();
-    });
-
+    rawEvents.value = Array.isArray(response.data) ? response.data : [];
+    nextTick(scrollToLastEvent);
   } catch (err) {
-    error.value = "Erreur backend.";
+    error.value = "Erreur lors du chargement des données";
     console.error(err);
   } finally {
     loading.value = false;
@@ -178,40 +212,121 @@ const fetchData = async () => {
 };
 
 const scrollToLastEvent = () => {
-    if (!scrollContainer.value) return;
-    // On essaye de centrer sur la fin, ou tout à droite
-    scrollContainer.value.scrollLeft = scrollContainer.value.scrollWidth - 500; 
+  if (!scrollContainer.value) return;
+  scrollContainer.value.scrollLeft = scrollContainer.value.scrollWidth - 400;
 };
 
 const handleScroll = (e) => {
-    if (scrollContainer.value) scrollContainer.value.scrollLeft += e.deltaY;
+  if (scrollContainer.value) scrollContainer.value.scrollLeft += e.deltaY;
 };
 
 const selectEvent = (evt) => {
-    selectedEvent.value = evt;
-}
+  selectedEvent.value = evt;
+};
 
-// --- FORMATAGE ---
+// ────────────────────────────────────────────────
+//  Formatage
+// ────────────────────────────────────────────────
+const formatTime = (ms) => {
+  const d = new Date(ms);
+  return `${d.getHours()}h${d.getMinutes().toString().padStart(2, '0')}`;
+};
 
-const formatTime = (iso) => {
-    const d = new Date(iso);
-    return `${d.getHours()}h${d.getMinutes().toString().padStart(2, '0')}`;
-}
+const formatFullDate = (ms) => {
+  return new Date(ms).toLocaleDateString('fr-FR', { 
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' 
+  });
+};
 
-const formatFullDate = (iso) => {
-    return new Date(iso).toLocaleDateString('fr-FR', { 
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' 
-    });
-}
+const getBadgeClass = (type) => {
+  const map = {
+    'approved': 'info',
+    'rejected': 'error',
+    'pending': 'warn',
+    'error': 'error',
+    'default': 'default'
+  };
+  return map[type] || 'default';
+};
 
-const getBadgeClass = (type) => type ? type.toLowerCase() : 'default';
+// Pour un affichage propre des clés
+const formatKey = (key) => {
+  if (typeof key !== 'string') {
+    return String(key || '—'); // ou '' ou 'clé invalide'
+  }
+  return key
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, str => str.toUpperCase())
+    .trim();
+};
 
-onMounted(() => {
-  fetchData();
-});
+const formatValue = (value) => {
+  if (typeof value === 'object' && value !== null) {
+    return JSON.stringify(value, null, 2);
+  }
+  return String(value);
+};
+
+onMounted(fetchData);
 </script>
 
 <style scoped>
+/* ────────────────────────────────────────────────
+   Styles existants conservés + ajouts pour payload
+───────────────────────────────────────────────── */
+
+.payload-row {
+  display: flex;
+  margin: 8px 0;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.payload-key {
+  font-weight: 600;
+  color: #444;
+  min-width: 140px;
+  text-align: right;
+  opacity: 0.9;
+}
+
+.payload-value {
+  color: #2c3e50;
+  white-space: pre-wrap;
+  word-break: break-word;
+  flex: 1;
+}
+
+.detail-payload {
+  margin: 12px 0 20px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.detail-footer {
+  margin-top: 16px;
+  display: flex;
+  gap: 20px;
+  color: #777;
+  font-size: 0.8rem;
+}
+
+.tx-id {
+  font-family: 'Courier New', monospace;
+}
+
+/* Couleurs pour les types (points + tags) */
+.event-dot.approved,
+.type-tag.approved { background: #2ecc71; }
+.event-dot.rejected,
+.type-tag.rejected { background: #e74c3c; }
+.event-dot.pending,
+.type-tag.pending   { background: #f39c12; }
+.event-dot.error,
+.type-tag.error     { background: #c0392b; }
+.event-dot.default,
+.type-tag.default   { background: #95a5a6; }
+
 /* --- Structure --- */
 .monitor-container {
   display: flex; flex-direction: column;

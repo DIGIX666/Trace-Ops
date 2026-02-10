@@ -190,6 +190,38 @@ func (c *DecisionContract) ComputeLedgerHash(_ contractapi.TransactionContextInt
 	return computeSHA256Hex(normalizedPayload), nil
 }
 
+func (c *DecisionContract) GetAllDecisions(ctx contractapi.TransactionContextInterface) ([]*DecisionRecord, error) {
+	// Une plage vide ("","") récupère TOUTES les clés du state
+	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %w", err)
+	}
+	defer resultsIterator.Close()
+
+	var results []*DecisionRecord
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		// On ignore les clés d'index composite (celles qui commencent par "hash~id")
+		// pour ne renvoyer que les objets DecisionRecord réels
+		if strings.Contains(queryResponse.Key, "~") {
+			continue
+		}
+
+		var record DecisionRecord
+		err = json.Unmarshal(queryResponse.Value, &record)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, &record)
+	}
+
+	return results, nil
+}
+
 func main() {
 	chaincode, err := contractapi.NewChaincode(&DecisionContract{})
 	if err != nil {

@@ -1,12 +1,14 @@
 const express = require('express');
 const cors = require('cors');
-const mockData = require('./mockData');
+const { pullAllData } = require('./fabricService.js');
 
 const app = express();
 const port = 3000;
 
 app.use(cors()); // Important pour que le Frontend Vue puisse appeler l'API
 app.use(express.json());
+
+var data
 
 // --- Routes ---
 
@@ -16,21 +18,13 @@ app.get('/health', (req, res) => {
 });
 
 // 2. Timeline API (Lecture seule)
-app.get('/api/timeline', (req, res) => {
-    // Simulation d'un délai réseau pour le réalisme (optionnel)
-    setTimeout(() => {
-        console.log("Fetching timeline data (MOCK)...");
-        res.json(mockData);
-    }, 500);
-});
-
-// 3. Detail API
-app.get('/api/timeline/:id', (req, res) => {
-    const item = mockData.find(d => d.id === req.params.id);
-    if (item) {
-        res.json(item);
-    } else {
-        res.status(404).json({ error: "Event not found" });
+app.get('/api/timeline', async (req, res) => {
+    try {
+        console.log("Pulling Data from Fabric")
+        data = await pullAllData();
+        res.json(data);
+    } catch(err) {
+        console.log("Erreur pulling data from fabric : ", err)
     }
 });
 
