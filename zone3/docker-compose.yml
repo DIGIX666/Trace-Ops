@@ -25,6 +25,17 @@ services:
     networks:
       - zone3_net
       - shared_network
+      - traceops
+    extra_hosts:
+      - "peer0.orgem.traceops.local:host-gateway"
+      - "peer0.orgj2.traceops.local:host-gateway"
+      - "orderer1.traceops.local:host-gateway"
+      - "orderer0.traceops.local:host-gateway"
+    env_file:
+      - .env
+    volumes:
+      - ./wallet:/app/wallet:ro
+      - ./connection-profiles:/app/connection-profiles:ro
 
   # --- Frontend (Vue) ---
   frontend-retex:
@@ -40,3 +51,6 @@ networks:
   shared_network:
     external: true
     name: zone1_zone1-network
+  traceops:
+    external: true
+    name: traceops

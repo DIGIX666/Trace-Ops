@@ -5,7 +5,7 @@ COMPOSE_Z1 = zone1/docker-compose.yml
 COMPOSE_Z2 = zone2-ledger/compose/docker-compose.yaml
 COMPOSE_Z3 = zone3/docker-compose.yml
 
-.PHONY: help z1-up z1-build z1-down z1-stop z1-logs z1-clean z1-ps z2-up z2-down z2-clean z2-bootstrap z3-build z3-down
+.PHONY: help z1-up z1-build z1-down z1-stop z1-logs z1-clean z1-ps z2-up z2-down z2-clean z2-bootstrap z3-build z3-down z3-logs
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -63,3 +63,6 @@ z3-build:
 
 z3-down:
 	docker compose -f $(COMPOSE_Z3) down
+
+z3-logs:
+	docker compose -f $(COMPOSE_Z3) logs -f

@@ -20,6 +20,7 @@ async function getPrivateKeyPath(keystorePath) {
 }
 
 async function createGatewayConnection() {
+    console.log("Hello:", process.env.FABRIC_CCP_PATH)
     const ccpPath = path.resolve(__dirname, process.env.FABRIC_CCP_PATH);
     const ccp = JSON.parse(await fs.readFile(ccpPath, 'utf8'));
 
@@ -69,47 +70,28 @@ async function createGatewayConnection() {
 
 // --- FONCTIONS CRUD ---
 
-async function pushData(ID, payload, appHash) {
+async function pullAllData() {
     const { gateway, client } = await createGatewayConnection();
     try {
         const network = gateway.getNetwork(CHANNEL_NAME);
         const contract = network.getContract(CHAINCODE_NAME);
 
-        console.log(`\nSubmitDecision --> pushData, ID: ${ID}`);
+        console.log(`\nGetAllDecisions --> Récupération de tout le registre`);
 
-        const payloadString = JSON.stringify(payload);
-
-        await contract.submitTransaction("SubmitDecision", ID, payloadString, appHash);
+        // On utilise evaluateTransaction car c'est une opération en lecture seule
+        const resultBytes = await contract.evaluateTransaction("GetAllDecisions");
         
-        return { success: true };
-    } catch(err) {
-        console.log("Error pushing data : ", err)
-        throw err
-    } finally {
-        gateway.close();
-        client.close();
-    }
-}
-
-async function pullData(ID) {
-    const { gateway, client } = await createGatewayConnection();
-    try {
-        const network = gateway.getNetwork(CHANNEL_NAME);
-        const contract = network.getContract(CHAINCODE_NAME);
-
-        console.log(`\nQueryDecision --> pullData, ID: ${ID}`);
-
-        const resultBytes = await contract.evaluateTransaction("QueryDecision", ID);
         const resultString = new TextDecoder().decode(resultBytes);
+        if (!resultString) return [];
         
         return JSON.parse(resultString);
     } catch(err) {
-        console.log("Error pulling data : ", err)
-        throw err
+        console.error("Error pulling all data : ", err);
+        throw err;
     } finally {
         gateway.close();
         client.close();
     }
 }
 
-module.exports = { pushData, pullData };
+module.exports = { pullAllData };
