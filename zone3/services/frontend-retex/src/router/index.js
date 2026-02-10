@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import App from '../App.vue'
 import Home from '../views/Home.vue'
 import Timeline from '../views/Timeline.vue'
+import TraceScan from '../views/TraceScan.vue'
 import { callLogout } from '@/services/logout'
 
 const router = createRouter({
@@ -9,6 +10,7 @@ const router = createRouter({
   routes: [
     { path: '/', component: Home, name: 'Accueil', meta: { requiresAuth: true } },
     { path: '/timeline', component: Timeline, name: 'Timeline', meta: { requiresRole: 'admin' } },
+    { path: '/tracescan', component: TraceScan, name: 'TraceScan', meta: { requiresRole: 'admin' } },
     { path: '/logout', name: 'Logout', beforeEnter: callLogout }
   ]
 })
