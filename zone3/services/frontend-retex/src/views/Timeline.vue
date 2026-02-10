@@ -68,9 +68,8 @@
         <div class="detail-main">
           <!-- Affichage dynamique de TOUT le contenu du payload -->
           <div class="detail-payload">
-            <div v-for="(value, key) in selectedEvent.payload" :key="key" class="payload-row">
-              <span class="payload-key">{{ formatKey(key) }}</span>
-              <span class="payload-value">{{ formatValue(value) }}</span>
+            <div class="payload-row">
+              <span class="payload-key">{{ selectedEvent.payload }}</span>
             </div>
           </div>
 
@@ -251,6 +250,7 @@ const getBadgeClass = (type) => {
 
 // Pour un affichage propre des clés
 const formatKey = (key) => {
+  console.log(key)
   if (typeof key !== 'string') {
     return String(key || '—'); // ou '' ou 'clé invalide'
   }
@@ -261,6 +261,7 @@ const formatKey = (key) => {
 };
 
 const formatValue = (value) => {
+  console.log(value)
   if (typeof value === 'object' && value !== null) {
     return JSON.stringify(value, null, 2);
   }

@@ -6,16 +6,17 @@ const app = express();
 const port = 3000;
 
 const buildMockBlocks = () => {
-    const sorted = [...mockData].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const sorted = [...data].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    console.log(sorted)
     return sorted.map((tx, index) => ({
         blockNumber: index + 1,
         txId: tx.id,
         channel: 'traceops',
-        timestamp: tx.timestamp,
-        type: tx.type,
-        status: tx.status,
-        author: tx.author,
-        payload: tx.content
+        timestamp: tx.txTimestamp,
+        // type: tx.type,
+        // status: tx.status,
+        // author: tx.author,
+        payload: tx.payload
     }));
 };
 
