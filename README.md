@@ -1,41 +1,41 @@
-# Trace-OPS - POC Traceabilite Decisionnelle
+# Trace-OPS - Decision Traceability POC
 ![FoxyHack](imagesReadme/image.png)
 
-## Contexte
-Participation au Hackathon FoxyHack 2026 : le hackathon au service de la souveraineté nunérique 
+## Context
+Participation in FoxyHack 2026: the hackathon supporting digital sovereignty
 </br>
-- *15 déc 2025 – 31 jan 2026 : phase de recherche et préparation à distance*
-- *08 – 10 fév 2026 : hackathon en présentiel à Évreux*
+- *Dec 15, 2025 - Jan 31, 2026: remote research and preparation phase*
+- *Feb 8 - 10, 2026: on-site hackathon in Evreux*
 
 ## Teams 
 - [Thox](https://github.com/DIGIX666) : Théo Dubois - Dev Fullstack, Blockchain
 - [Simon](https://github.com/SLecureu) : Simon Lecureux - Dev Fullstack 
 
 ## Vision
-Trace-OPS vise a apporter une trace de confiance sur la chaine de decision operationnelle, entre la remontee d alertes terrain, la preanalyse J2, la decision humaine J3/EM, et le RETEX. Le POC demontre la faisabilite technique sans connexion a des SI classes et uniquement avec des donnees fictives.
+Trace-OPS aims to provide a trusted trace across the operational decision chain, from field alert reporting to J2 pre-analysis, J3/EM human decision, and after-action review (RETEX). The POC demonstrates technical feasibility without connecting to classified information systems and using only fictional data.
 
-## Objectifs du POC
-- Prouver la traceabilite des decisions humaines via un registre append-only.
-- Illustrer un flux complet : alerte -> preanalyse -> decision -> ancrage -> timeline.
-- Verifier la separation des zones reseau et la securisation des flux.
-- Produire une demo claire et reproductible en environnement de test.
+## POC Objectives
+- Prove traceability of human decisions through an append-only ledger.
+- Illustrate an end-to-end flow: alert -> pre-analysis -> decision -> anchoring -> timeline.
+- Verify network-zone separation and secure data flows.
+- Deliver a clear and reproducible demo in a test environment.
 
-## Perimetre fonctionnel
-1. Remontee d'information : interface d injection d alertes.
-2. Preanalyse J2 : moteur de scoring et synthese.
-3. Decision EM : validation/rejet/arbitrage avec roles.
-4. Registre de traceabilite : ancrage des empreintes de decisions.
-5. Timeline/RETEX : reconstruction chronologique des decisions.
+## Functional Scope
+1. Information intake: alert injection interface.
+2. J2 pre-analysis: scoring and synthesis engine.
+3. EM decision: validation/rejection/arbitration with role-based controls.
+4. Traceability ledger: anchoring decision fingerprints.
+5. Timeline/RETEX: chronological reconstruction of decisions.
 
-Hors perimetre POC
-- Interconnexion avec des SI operationnels reels.
-- Decision automatisee par IA.
-- Chiffrement post-quantique.
+Out of POC scope
+- Interconnection with real operational information systems.
+- AI-automated decision-making.
+- Post-quantum encryption.
 
-## Architecture cible (POC)
-Le SI est segmente en trois zones reseau isolees et controlees par pare-feux.
+## Target Architecture (POC)
+The information system is segmented into three isolated network zones controlled by firewalls.
 
-Schema detaille (services, infra, securite)
+Detailed diagram (services, infrastructure, security)
 
 ```
                             Utilisateurs
@@ -49,17 +49,17 @@ Schema detaille (services, infra, securite)
                                  |
                                  v
     +---------------------------------------------------------+
-    | Zone 1 - Reseau utilisateurs/analystes                  |
+    | Zone 1 - User/Analyst network                            |
     |                                                         |
     |  +-------------+    REST/TLS    +-------------------+   |
-    |  | UI Alertes  |--------------->| API FastAPI (J2/EM)|  |
+    |  | Alert UI    |--------------->| FastAPI API (J2/EM)|  |
     |  +-------------+                | - scoring J2       |  |
     |          ^                      | - decisions EM     |  |
     |          |                      +-------------------+   |
     |      HTTPS 443                           |              |
     |  +-------------+                         | gRPC/TLS 7050|
-    |  | UI EM /     |<------------------------+              |
-    |  | Decision    |                                        |
+    |  |    EM /     |<------------------------+              |
+    |  | Decision UI |                                        |
     |  +-------------+                                        |
     |                                                         |
     |  +-------------+                                        |
@@ -70,7 +70,7 @@ Schema detaille (services, infra, securite)
                                  |
                                  v
     +---------------------------------------------------------+
-    | Zone 2 - Reseau ledger/infrastructure                   |
+    | Zone 2 - Ledger/Infrastructure network                  |
     |  +-----------------+   +-----------------------------+  |
     |  | Fabric CA       |   | Fabric Orderer + Peers       | |
     |  +-----------------+   +-----------------------------+  |
@@ -80,107 +80,107 @@ Schema detaille (services, infra, securite)
                                  |
                                  v
     +---------------------------------------------------------+
-    | Zone 3 - Reseau RETEX                                   |
+    | Zone 3 - RETEX network                                  |
     |  +-----------------+   gRPC/TLS 7051                    |
     |  | Timeline Service |<---------------------------------+|
     |  +-----------------+                                    |
     |          | HTTPS 443                                    |
     |          v                                              |
     |  +-----------------+                                    |
-    |  | UI Timeline      |                                   |
+    |  | Timeline UI     |                                    |
     |  +-----------------+                                    |
     +---------------------------------------------------------+
 
-Notes securite
-- TLS partout, mTLS pour l acces ledger.
-- Aucun flux sortant Internet.
-- Segmentation par pare-feux entre zones.
+Security notes
+- TLS everywhere, mTLS for ledger access.
+- No outbound internet traffic.
+- Firewall segmentation between zones.
 ```
 
 ### Zones
-- Zone 1 - Reseau utilisateurs/analystes : application d alertes, moteur J2, interface EM.
-- Zone 2 - Reseau ledger/infrastructure : Hyperledger Fabric + base etat.
-- Zone 3 - Reseau RETEX : service Timeline (lecture du registre).
+- Zone 1 - User/Analyst network: alert app, J2 engine, EM interface.
+- Zone 2 - Ledger/Infrastructure network: Hyperledger Fabric + world state database.
+- Zone 3 - RETEX network: Timeline service (ledger read access).
 
 ### Services
-- Service de remontee d alertes : UI web pour injecter les alertes.
-- Service de preanalyse J2 : scoring + synthese via API REST.
-- Service de decision EM : UI de validation/rejet/arbitrage.
-- Service ledger : enregistrement des empreintes et horodatage.
-- Service Timeline/RETEX : chronologie et consultation.
+- Alert intake service: web UI to submit alerts.
+- J2 pre-analysis service: scoring + synthesis through REST API.
+- EM decision service: UI for validation/rejection/arbitration.
+- Ledger service: fingerprint recording and timestamping.
+- Timeline/RETEX service: chronology and review.
 
 ### Flux principaux
-- UI alertes -> moteur J2 : HTTP/REST (interne, TLS si inter-conteneur).
-- Interface EM -> Ledger : gRPC/TLS (7050) pour ancrage.
-- Ledger -> Timeline : gRPC/TLS (7051) pour lecture.
-- Timeline -> UI EM : HTTPS (443) pour consultation.
+- Alert UI -> J2 engine: HTTP/REST (internal, TLS if inter-container).
+- EM interface -> Ledger: gRPC/TLS (7050) for anchoring.
+- Ledger -> Timeline: gRPC/TLS (7051) for reads.
+- Timeline -> EM UI: HTTPS (443) for consultation.
 
-## Choix techniques retenus
-- Portail utilisateur et interface decisionnelle : Vue.js (MIT).
-- API decisionnelle et orchestration : FastAPI (Python).
-- Registre de traceabilite : Hyperledger Fabric v2.5 (Apache 2.0).
-- Base de metadonnees : PostgreSQL.
-- IAM/SSO : Keycloak (OIDC, RBAC).
-- Reverse proxy TLS : Traefik.
-- Observabilite : Prometheus + Grafana + Loki.
+## Selected Technology Stack
+- User portal and decision interface: Vue.js (MIT).
+- Decision API and orchestration: FastAPI (Python).
+- Traceability ledger: Hyperledger Fabric v2.5 (Apache 2.0).
+- Metadata database: PostgreSQL.
+- IAM/SSO: Keycloak (OIDC, RBAC).
+- TLS reverse proxy: Traefik.
+- Observability: Prometheus + Grafana + Loki.
 
-## Hypotheses et contraintes POC
-- Donnees fictives uniquement.
-- Aucun flux sortant Internet.
-- TLS partout, mTLS pour le ledger.
-- Environnement de demo deconnecte des reseaux reels.
-- Dimensionnement POC sur VM Ubuntu Server 22.04.
+## POC Assumptions and Constraints
+- Fictional data only.
+- No outbound internet traffic.
+- TLS everywhere, mTLS for ledger.
+- Demo environment disconnected from real networks.
+- POC sizing based on Ubuntu Server 22.04 VMs.
 
-## Livrables attendus
-- POC fonctionnel end-to-end.
-- README + roadmap datee.
-- Script de demo et jeu d'alertes fictif.
-- Diagrammes/flux et parametres reseau de reference.
+## Expected Deliverables
+- End-to-end functional POC.
+- README + dated roadmap.
+- Demo script and fictional alert dataset.
+- Reference diagrams/flows and network parameters.
 
 ## Roadmap
 
-### Phase 1 - Fondamentaux (jusqu au 7 fevrier)
-Objectif : cadrer, securiser et figer les bases techniques et fonctionnelles.
+### Phase 1 - Foundations (until February 7)
+Objective: scope, secure, and lock down technical and functional foundations.
 
-Travaux
-- Cadrage fonctionnel final + parcours utilisateur (alertes, J2, EM, RETEX).
-- Modele de donnees : alerte, analyse, decision, empreinte.
-- Contrats API (OpenAPI) et schema de roles (J2/J3/EM/SA).
-- Schema ledger minimal (transaction de decision + hash SHA-256).
-- Architecture reseau finalisee (ports, zones, flux).
-- Plan d infra POC (VM, conteneurs, volumes, TLS, mTLS).
-- Jeux de donnees fictifs + scenario de demo.
+Work items
+- Final functional scope + user journeys (alerts, J2, EM, RETEX).
+- Data model: alert, analysis, decision, fingerprint.
+- API contracts (OpenAPI) and role model (J2/J3/EM/SA).
+- Minimal ledger schema (decision transaction + SHA-256 hash).
+- Finalized network architecture (ports, zones, flows).
+- POC infrastructure plan (VMs, containers, volumes, TLS, mTLS).
+- Fictional datasets + demo scenario.
 
-Repartition (equipe de 2)
-- Personne A : parcours utilisateurs, UI POC, dataset demo.
-- Personne B : API/ledger, schema de donnees, infra et securite.
+Work split (2-person team)
+- Person A: user journeys, POC UI, demo dataset.
+- Person B: API/ledger, data model, infrastructure and security.
 
-Point de synchronisation
-- Fin de phase : demo sur maquette (UI + API mock + schema ledger valide).
+Sync checkpoint
+- End of phase: mock demo (UI + mocked API + validated ledger schema).
 
-### Phase 2 - Build POC (9-10 fevrier)
-Objectif : assembler le flux complet et livrer une demo fiable.
+### Phase 2 - POC Build (February 9-10)
+Objective: assemble the full flow and deliver a reliable demo.
 
-Travaux
-- UI alertes + UI EM + timeline (version demo).
-- API FastAPI : ingestion, scoring basique, decision.
-- Integration ledger : enregistrement d empreinte et lecture.
-- Timeline : extraction et visualisation.
-- Mise en place du reverse proxy et TLS.
-- Observabilite minimale (logs + metriques).
-- Run de demo avec chronologie complete.
+Work items
+- Alert UI + EM UI + timeline (demo version).
+- FastAPI API: ingestion, basic scoring, decision handling.
+- Ledger integration: fingerprint write and read.
+- Timeline: extraction and visualization.
+- Reverse proxy and TLS setup.
+- Minimal observability (logs + metrics).
+- Demo run with complete chronology.
 
-Critere de succes
-- Un observateur peut suivre une alerte, voir l analyse, la decision, puis la trace dans la timeline.
-- L empreinte est verifiable et liee a la decision humaine.
-- Les flux respectent les zones reseau et TLS.
+Success criteria
+- An observer can follow an alert, view analysis, decision, then trace it in the timeline.
+- The fingerprint is verifiable and linked to a human decision.
+- Flows comply with network-zone boundaries and TLS.
 
-## Limites du POC
-- Pas de charge reellement representative.
-- Pas d'interconnexion avec SI operationnels.
-- IA limitee a l'aide a la synthese, pas de decision automatique.
+## POC Limitations
+- No representative production-level load.
+- No interconnection with operational information systems.
+- AI limited to synthesis assistance, no autonomous decision-making.
 
-## Next steps possibles
-1) Ajouter des regles metier J2 plus riches et parametrables.
-2) Durcir la securite (HSM, politiques mTLS avancees).
-3) Preparer une integration avec un SI tiers en environnement isole.
+## Possible Next Steps
+1) Add richer, configurable J2 business rules.
+2) Strengthen security (HSM, advanced mTLS policies).
+3) Prepare integration with a third-party information system in an isolated environment.

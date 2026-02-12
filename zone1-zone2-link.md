@@ -1,6 +1,6 @@
-## Pour tout initialiser pour l'instant:
+## To initialize everything for now:
 
-### Lancez ces commandes dans l'ordre depuis la racine:
+### Run these commands in order from the repository root:
 
 ```bash
 docker compose -f zone2-ledger/compose/docker-compose.yaml up -d ca.traceops.local couchdb0.orgj2.traceops.local couchdb0.orgem.traceops.local
@@ -18,40 +18,40 @@ sudo ./zone2-ledger/scripts/bootstrap-network.sh
 sudo ./zone2-ledger/scripts/generate-connection-profiles.sh
 ```
 
-### Vérifiez le profil généré/copié automatiquement :
+### Verify the generated/copied profile automatically:
 
-Depuis `generate-connection-profiles.sh`, le fichier est généré dans Zone2 **et** recopié automatiquement dans Zone1.
+From `generate-connection-profiles.sh`, the file is generated in Zone2 **and** automatically copied to Zone1.
 
 ```bash
 ls -l zone2-ledger/config/connection-profiles/zone1-write-connection.json
 ls -l zone1/connection-profiles/zone1-write-connection.json
 ```
 
-### Runnez les tests au cas où:
+### Run tests just in case:
 
 ```bash
 ./zone2-ledger/scripts/run-unit-tests.sh
 ```
 
-### identités Fabric dans `zone1/wallet` :
+### Fabric identities in `zone1/wallet`:
 
-Le backend EM attend `wallet/cert.pem` et un fichier `*_sk` dans `zone1/wallet`.
+The EM backend expects `wallet/cert.pem` and one `*_sk` file in `zone1/wallet`.
 
-Vérification rapide :
+Quick check:
 
 ```bash
 ls -l zone1/wallet
 ```
 
-Après cela copier ce wallet dans la zone3 également !
+After that, copy this wallet into Zone3 as well.
 
 ```
 cp zone1/wallet zone3/wallet
 ```
 
-### Une fois cela de fait, on peut lancer la zone 1:
+### Once this is done, you can start Zone 1:
 
-[Configuration de Keycloak](/keycloak-config/README-keycloak.md)
+[Keycloak configuration](/keycloak-config/README-keycloak.md)
 
 AND
 
@@ -59,7 +59,7 @@ AND
 make z1-build
 ```
 
-### On peut aussi appeler la zone 3 après la zone 1:
+### You can also start Zone 3 after Zone 1:
 
 ```bash
 make z3-build
